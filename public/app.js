@@ -111,18 +111,20 @@ function renderTimeline(data) {
     const classes = ['timeline-item', ongoing ? 'ongoing' : '', isPartial ? 'partial' : ''].filter(Boolean).join(' ');
     const typeTag = isPartial ? ' <span class="timeline-type">partial</span>' : '';
     const delay = Math.min(i * 0.04, 1.2);
+    const desc = s.description ? `<div class="timeline-description"><p>${escapeHtml(s.description)}</p></div>` : '';
 
     return `
-      <div class="${classes}" style="animation-delay: ${delay}s">
+      <div class="${classes}" style="animation-delay: ${delay}s" onclick="this.classList.toggle('expanded')">
         <span class="timeline-year">${escapeHtml(year)}</span>
         <div class="timeline-bar-wrap">
           <div class="timeline-bar" style="width: ${barWidth}%"></div>
           <span class="timeline-bar-label">${escapeHtml(range)}</span>
         </div>
         <div class="timeline-meta">
-          <span class="timeline-days">${escapeHtml(daysLabel)}${typeTag}</span>
+          <span class="timeline-days">${escapeHtml(daysLabel)}${typeTag}<span class="timeline-chevron">&#9654;</span></span>
           <div class="timeline-range">${escapeHtml(range)}</div>
         </div>
+        ${desc}
       </div>
     `;
   }).join('');

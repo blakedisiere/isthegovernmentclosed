@@ -381,6 +381,7 @@ body.partial-shutdown .counter-number {
   transition: background 0.2s ease;
   opacity: 0;
   animation: reveal-row 0.4s ease-out forwards;
+  cursor: pointer;
 }
 
 .timeline-item:hover {
@@ -453,7 +454,7 @@ body.partial-shutdown .counter-number {
   top: -1px;
   font-family: var(--font-mono);
   font-size: 0.5625rem;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   letter-spacing: 0.04em;
   white-space: nowrap;
   opacity: 0;
@@ -488,7 +489,7 @@ body.partial-shutdown .counter-number {
 .timeline-range {
   font-family: var(--font-mono);
   font-size: 0.5625rem;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   margin-top: 2px;
   letter-spacing: 0.02em;
 }
@@ -504,6 +505,43 @@ body.partial-shutdown .counter-number {
   padding: 1px 5px;
   border: 1px solid rgba(251, 191, 36, 0.25);
   border-radius: 3px;
+}
+
+.timeline-item .timeline-chevron {
+  display: inline-block;
+  font-size: 0.5rem;
+  color: var(--text-tertiary);
+  transition: transform 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.timeline-item.expanded .timeline-chevron {
+  transform: rotate(90deg);
+}
+
+.timeline-description {
+  grid-column: 1 / -1;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  padding: 0 0.25rem;
+}
+
+.timeline-item.expanded .timeline-description {
+  max-height: 200px;
+  opacity: 1;
+  padding: 0.5rem 0.25rem 0.25rem;
+}
+
+.timeline-description p {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.5rem;
 }
 
 @keyframes reveal-row {
