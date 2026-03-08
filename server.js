@@ -27,6 +27,7 @@ app.get('/api/shutdowns', (req, res) => {
     end: s.end,
     type: s.type || 'full',
     days: daysBetween(s.start, s.end),
+    description: s.description || null,
   }));
   const totalDays = shutdowns.reduce((sum, s) => sum + s.days, 0);
   const maxDays = Math.max(...shutdowns.map((s) => s.days));

@@ -92,6 +92,27 @@ function renderSourceFootnotes(data) {
   }
 }
 
+// US Presidents relevant to shutdown history
+const PRESIDENTS = [
+  { name: 'Ford', end: '1977-01-20' },
+  { name: 'Carter', end: '1981-01-20' },
+  { name: 'Reagan', end: '1989-01-20' },
+  { name: 'G.H.W. Bush', end: '1993-01-20' },
+  { name: 'Clinton', end: '2001-01-20' },
+  { name: 'G.W. Bush', end: '2009-01-20' },
+  { name: 'Obama', end: '2017-01-20' },
+  { name: 'Trump', end: '2021-01-20' },
+  { name: 'Biden', end: '2025-01-20' },
+  { name: 'Trump', end: '2029-01-20' },
+];
+
+function getPresident(dateStr) {
+  for (const p of PRESIDENTS) {
+    if (dateStr < p.end) return p.name;
+  }
+  return PRESIDENTS[PRESIDENTS.length - 1].name;
+}
+
 // Render shutdown timeline from server data
 function renderTimeline(data) {
   const { shutdowns, count, totalDays, maxDays } = data;
@@ -100,32 +121,72 @@ function renderTimeline(data) {
   totalDaysEl.textContent = totalDays.toLocaleString();
 
   const sorted = [...shutdowns].reverse();
+  let html = '';
+  let lastPresident = null;
+  let cardIndex = 0;
 
-  timelineEl.innerHTML = sorted.map((s, i) => {
+  sorted.forEach((s) => {
+    const president = getPresident(s.start);
+
+    // Insert president marker when president changes
+    if (president !== lastPresident) {
+      html += `
+        <div class="timeline-president">
+          <span class="timeline-president-label">${escapeHtml(president)}</span>
+        </div>
+      `;
+      lastPresident = president;
+    }
+
     const ongoing = s.end === null;
     const isPartial = s.type === 'partial';
     const daysLabel = s.days === 1 ? '1 day' : `${s.days} days`;
     const barWidth = Math.max(2, (s.days / maxDays) * 100);
     const year = s.start.split('-')[0];
     const range = `${formatShortDate(s.start)} – ${ongoing ? 'Present' : formatShortDate(s.end)}`;
-    const classes = ['timeline-item', ongoing ? 'ongoing' : '', isPartial ? 'partial' : ''].filter(Boolean).join(' ');
+    const side = cardIndex % 2 === 0 ? 'left' : 'right';
+    const entryClasses = ['timeline-entry', side, ongoing ? 'ongoing' : '', isPartial ? 'partial' : ''].filter(Boolean).join(' ');
     const typeTag = isPartial ? ' <span class="timeline-type">partial</span>' : '';
-    const delay = Math.min(i * 0.04, 1.2);
+    const desc = s.description ? `<div class="timeline-description"><p>${escapeHtml(s.description)}</p></div>` : '';
 
-    return `
-      <div class="${classes}" style="animation-delay: ${delay}s">
-        <span class="timeline-year">${escapeHtml(year)}</span>
-        <div class="timeline-bar-wrap">
-          <div class="timeline-bar" style="width: ${barWidth}%"></div>
-          <span class="timeline-bar-label">${escapeHtml(range)}</span>
-        </div>
-        <div class="timeline-meta">
-          <span class="timeline-days">${escapeHtml(daysLabel)}${typeTag}</span>
-          <div class="timeline-range">${escapeHtml(range)}</div>
+    html += `
+      <div class="${entryClasses}">
+        <div class="timeline-dot"></div>
+        <div class="timeline-connector"></div>
+        <div class="timeline-card" onclick="this.classList.toggle('expanded')">
+          <div class="timeline-card-header">
+            <span class="timeline-year">${escapeHtml(year)}</span>
+            <span class="timeline-days">${escapeHtml(daysLabel)}${typeTag}</span>
+          </div>
+          <div class="timeline-bar-wrap">
+            <div class="timeline-bar" style="width: ${barWidth}%"></div>
+          </div>
+          <div class="timeline-card-footer">
+            <span class="timeline-range">${escapeHtml(range)}</span>
+            <span class="timeline-chevron">&#9654;</span>
+          </div>
+          ${desc}
         </div>
       </div>
     `;
-  }).join('');
+    cardIndex++;
+  });
+
+  timelineEl.innerHTML = html;
+
+  // Scroll-reveal with IntersectionObserver
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  timelineEl.querySelectorAll('.timeline-entry, .timeline-president').forEach((el) => {
+    observer.observe(el);
+  });
 }
 
 // Escape HTML to prevent XSS
