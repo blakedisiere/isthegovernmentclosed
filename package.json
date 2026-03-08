@@ -1,0 +1,17 @@
+{
+  "name": "isthegovernmentclosed",
+  "version": "1.0.0",
+  "description": "A website that displays whether or not the US Federal government is closed",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["government", "shutdown"],
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0",
+    "express": "^4.21.0"
+  }
+}

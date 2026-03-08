@@ -1,0 +1,83 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #1a1a2e;
+  color: #eee;
+  transition: background 0.5s;
+}
+
+body.closed {
+  background: #8b0000;
+}
+
+body.open {
+  background: #1a1a2e;
+}
+
+main {
+  text-align: center;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  margin-bottom: 2rem;
+  letter-spacing: 0.02em;
+}
+
+.answer {
+  font-size: 8rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+}
+
+.answer.loading {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.answer.yes {
+  color: #ff4444;
+}
+
+.answer.no {
+  color: #44ff88;
+}
+
+.detail {
+  font-size: 1.25rem;
+  opacity: 0.85;
+  max-width: 600px;
+  margin: 0 auto 1rem;
+}
+
+.source {
+  font-size: 0.85rem;
+  opacity: 0.5;
+}
+
+@media (max-width: 600px) {
+  .answer {
+    font-size: 5rem;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  .detail {
+    font-size: 1rem;
+  }
+}
