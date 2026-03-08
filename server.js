@@ -29,7 +29,18 @@ if (indexHtml) {
         daysClosed: status.since ? daysBetween(status.since, null) : null,
       };
       const script = `<script>window.__STATUS__=${JSON.stringify(initialData)}</script>`;
-      res.send(indexHtml.replace('</head>', script + '</head>'));
+      let html = indexHtml.replace('</head>', script + '</head>');
+
+      // Inject answer text for search-engine crawlers
+      const answerText = status.isClosed
+        ? (status.type === 'partial' ? 'Partially' : 'Yes')
+        : 'No';
+      html = html.replace(
+        'class="answer loading shimmer" aria-live="polite" aria-atomic="true">...</div>',
+        `class="answer" aria-live="polite" aria-atomic="true">${answerText}</div>`
+      );
+
+      res.send(html);
     } catch (err) {
       console.error('SSR failed, serving static index.html:', err.message);
       res.sendFile(path.join(__dirname, 'public', 'index.html'));
