@@ -90,7 +90,7 @@ async function buildOgImage(status) {
   const headerBuf = await sharp({
     text: {
       text: `<span foreground="#9ca3af" size="36000">Is the government closed?</span>`,
-      fontfile: fontFiles.outfit || undefined,
+      fontfile: fontFiles.instrumentSerif || undefined,
       rgba: true,
       width: WIDTH - 100,
       align: 'centre',
@@ -99,7 +99,7 @@ async function buildOgImage(status) {
 
   const answerBuf = await sharp({
     text: {
-      text: `<span foreground="${answerColor}" size="140000" weight="bold">${answerText}</span>`,
+      text: `<span foreground="${answerColor}" size="140000">${answerText}</span>`,
       fontfile: fontFiles.instrumentSerif || undefined,
       rgba: true,
       width: WIDTH - 100,
