@@ -392,7 +392,7 @@ body.partial-shutdown .counter-number {
   margin-bottom: 1rem;
 }
 
-/* Subtle separator line between president groups */
+/* Subtle separator line above each president group (except the first) */
 .timeline-group + .timeline-group::before {
   content: '';
   display: block;
@@ -400,7 +400,8 @@ body.partial-shutdown .counter-number {
   max-width: 200px;
   height: 1px;
   background: var(--border);
-  margin: 0 auto 1rem;
+  margin: 0 auto 1.25rem;
+  padding-top: 0.5rem;
   opacity: 0.6;
 }
 
