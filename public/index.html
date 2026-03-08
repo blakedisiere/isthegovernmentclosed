@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Is the Government Closed?</title>
+  <meta name="description" content="Real-time US Federal Government shutdown status tracker">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+    <!-- Status Section -->
+    <header class="status-section">
+      <p class="question">Is the US Federal Government closed?</p>
+      <div class="answer-row">
+        <span id="status-dot" class="status-dot"></span>
+        <h1 id="answer" class="answer loading">...</h1>
+      </div>
+      <p id="detail" class="detail"></p>
+    </header>
+
+    <!-- Day Counter (visible during shutdowns) -->
+    <section id="counter-section" class="counter-section hidden">
+      <div class="counter-card">
+        <span id="counter-number" class="counter-number">0</span>
+        <span class="counter-label">days closed</span>
+      </div>
+    </section>
+
+    <!-- Historical Timeline -->
+    <section class="timeline-section">
+      <h2 class="section-title">Shutdown History</h2>
+      <p class="section-subtitle">All US federal government shutdowns since 1976</p>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p id="last-checked" class="last-checked"></p>
+      <p id="sources-line" class="sources-line"></p>
+      <p class="footer-note">Data from OPM, Congress.gov, and historical records. Auto-refreshes every 15 minutes.</p>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
