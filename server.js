@@ -242,7 +242,9 @@ if (indexHtml) {
         /<meta name="twitter:card" content="[^"]*">/,
         '<meta name="twitter:card" content="summary_large_image">'
       );
-      // OG image tags are already in the static HTML — no injection needed
+      // Replace OG image and URL with the actual request host
+      const origin = `${req.protocol}://${req.get('host')}`;
+      html = html.replace(/https:\/\/isthegovernmentclosed\.com/g, origin);
 
       // Inject answer text for search-engine crawlers
       const answerText = status.isClosed
