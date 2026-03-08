@@ -88,9 +88,11 @@ app.get('/api/status', async (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
 
 // Export for Amplify Web Compute
 module.exports = app;
