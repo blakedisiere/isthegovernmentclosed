@@ -17,76 +17,150 @@ const PORT = process.env.PORT || 3000;
 let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
 
-// Load fonts for OG image generation (embedded as base64 in SVG)
-let fontOutfitRegular = '';
-let fontOutfitBold = '';
-let fontInstrumentSerif = '';
-let fontSpaceMono = '';
-try {
-  const fontsDir = path.join(__dirname, 'fonts');
-  fontOutfitRegular = fs.readFileSync(path.join(fontsDir, 'Outfit-Regular.ttf')).toString('base64');
-  fontOutfitBold = fs.readFileSync(path.join(fontsDir, 'Outfit-Bold.ttf')).toString('base64');
-  fontInstrumentSerif = fs.readFileSync(path.join(fontsDir, 'InstrumentSerif-Regular.ttf')).toString('base64');
-  fontSpaceMono = fs.readFileSync(path.join(fontsDir, 'SpaceMono-Regular.ttf')).toString('base64');
-} catch (err) {
-  console.warn('Could not load OG image fonts:', err.message);
-}
-
 // OG image cache
 let ogCache = { buffer: null, cacheKey: null, timestamp: 0 };
+
+// Load font files for Pango text rendering
+const fontsDir = path.join(__dirname, 'fonts');
+let fontFiles = {};
+try {
+  fontFiles = {
+    outfit: path.join(fontsDir, 'Outfit-Regular.ttf'),
+    outfitBold: path.join(fontsDir, 'Outfit-Bold.ttf'),
+    instrumentSerif: path.join(fontsDir, 'InstrumentSerif-Regular.ttf'),
+    spaceMono: path.join(fontsDir, 'SpaceMono-Regular.ttf'),
+  };
+  // Verify files exist
+  Object.values(fontFiles).forEach(f => fs.accessSync(f));
+} catch (err) {
+  console.warn('Could not find OG image fonts:', err.message);
+  fontFiles = {};
+}
 
 function formatDateForOg(dateStr) {
   const date = new Date(dateStr + 'T00:00:00');
   return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-function buildOgSvg(status) {
+function createTextSvg(text, fontSize, color, fontFamily, fontWeight, width) {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${Math.round(fontSize * 1.5)}">
+    <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle"
+      font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight || 'normal'}"
+      fill="${color}">${escaped}</text>
+  </svg>`);
+}
+
+async function buildOgImage(status) {
   const isClosed = status.isClosed;
   const type = status.type || 'full';
+  const WIDTH = 1200;
+  const HEIGHT = 630;
 
-  let bg, answerText, answerColor, subtitle;
+  let bgHex, answerText, answerColor, subtitle;
   if (!isClosed) {
-    bg = '#07080c';
+    bgHex = '#07080c';
     answerText = 'No';
     answerColor = '#4ade80';
     subtitle = 'The government is open.';
   } else if (type === 'partial') {
-    bg = '#0c0b06';
+    bgHex = '#0c0b06';
     answerText = 'Partially';
     answerColor = '#fbbf24';
     const days = status.since ? daysBetween(status.since, null) : null;
     subtitle = status.since
-      ? `Since ${formatDateForOg(status.since)}` + (days ? ` · ${days} day${days !== 1 ? 's' : ''}` : '')
+      ? `Since ${formatDateForOg(status.since)}` + (days ? ` \u00b7 ${days} day${days !== 1 ? 's' : ''}` : '')
       : 'A partial government shutdown is underway.';
   } else {
-    bg = '#0c0606';
+    bgHex = '#0c0606';
     answerText = 'Yes';
     answerColor = '#ef4444';
     const days = status.since ? daysBetween(status.since, null) : null;
     subtitle = status.since
-      ? `Since ${formatDateForOg(status.since)}` + (days ? ` · ${days} day${days !== 1 ? 's' : ''}` : '')
+      ? `Since ${formatDateForOg(status.since)}` + (days ? ` \u00b7 ${days} day${days !== 1 ? 's' : ''}` : '')
       : 'The government is shut down.';
   }
 
-  return `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @font-face { font-family: 'Outfit'; font-weight: 400; src: url('data:font/ttf;base64,${fontOutfitRegular}') format('truetype'); }
-      @font-face { font-family: 'Outfit'; font-weight: 700; src: url('data:font/ttf;base64,${fontOutfitBold}') format('truetype'); }
-      @font-face { font-family: 'Instrument Serif'; src: url('data:font/ttf;base64,${fontInstrumentSerif}') format('truetype'); }
-      @font-face { font-family: 'Space Mono'; src: url('data:font/ttf;base64,${fontSpaceMono}') format('truetype'); }
-    </style>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-  <rect width="1200" height="630" fill="${bg}"/>
-  <text x="600" y="160" text-anchor="middle" font-family="Outfit" font-size="36" fill="#9ca3af">Is the government closed?</text>
-  <text x="600" y="370" text-anchor="middle" font-family="Instrument Serif" font-size="160" font-weight="bold" fill="${answerColor}" filter="url(#glow)">${answerText}</text>
-  <text x="600" y="450" text-anchor="middle" font-family="Outfit" font-size="28" fill="#9ca3af">${subtitle}</text>
-  <text x="600" y="590" text-anchor="middle" font-family="Space Mono" font-size="22" fill="#6b7280">isthegovernmentclosed.com</text>
-</svg>`;
+  // Parse background hex to RGB
+  const bgR = parseInt(bgHex.slice(1, 3), 16);
+  const bgG = parseInt(bgHex.slice(3, 5), 16);
+  const bgB = parseInt(bgHex.slice(5, 7), 16);
+
+  // Use Pango text rendering via sharp's text input
+  const headerBuf = await sharp({
+    text: {
+      text: `<span foreground="#9ca3af" size="36000">Is the government closed?</span>`,
+      fontfile: fontFiles.outfit || undefined,
+      rgba: true,
+      width: WIDTH - 100,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  const answerBuf = await sharp({
+    text: {
+      text: `<span foreground="${answerColor}" size="140000" weight="bold">${answerText}</span>`,
+      fontfile: fontFiles.instrumentSerif || undefined,
+      rgba: true,
+      width: WIDTH - 100,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  // Add glow: blur a copy of the answer text and composite under original
+  const answerMeta = await sharp(answerBuf).metadata();
+  const glowBuf = await sharp(answerBuf)
+    .blur(12)
+    .toBuffer();
+
+  const subtitleBuf = await sharp({
+    text: {
+      text: `<span foreground="#9ca3af" size="24000">${subtitle.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`,
+      fontfile: fontFiles.outfit || undefined,
+      rgba: true,
+      width: WIDTH - 100,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  const domainBuf = await sharp({
+    text: {
+      text: '<span foreground="#6b7280" size="20000">isthegovernmentclosed.com</span>',
+      fontfile: fontFiles.spaceMono || undefined,
+      rgba: true,
+      width: WIDTH - 100,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  // Get dimensions for centering
+  const headerMeta = await sharp(headerBuf).metadata();
+  const subtitleMeta = await sharp(subtitleBuf).metadata();
+  const domainMeta = await sharp(domainBuf).metadata();
+
+  // Layout: center everything horizontally, spread vertically
+  const headerY = 100;
+  const answerY = Math.round((HEIGHT - answerMeta.height) / 2) - 30;
+  const subtitleY = answerY + answerMeta.height + 15;
+  const domainY = HEIGHT - domainMeta.height - 30;
+
+  return sharp({
+    create: {
+      width: WIDTH,
+      height: HEIGHT,
+      channels: 4,
+      background: { r: bgR, g: bgG, b: bgB, alpha: 255 },
+    },
+  })
+    .composite([
+      { input: headerBuf, left: Math.round((WIDTH - headerMeta.width) / 2), top: headerY },
+      { input: glowBuf, left: Math.round((WIDTH - answerMeta.width) / 2), top: answerY },
+      { input: answerBuf, left: Math.round((WIDTH - answerMeta.width) / 2), top: answerY },
+      { input: subtitleBuf, left: Math.round((WIDTH - subtitleMeta.width) / 2), top: subtitleY },
+      { input: domainBuf, left: Math.round((WIDTH - domainMeta.width) / 2), top: domainY },
+    ])
+    .png()
+    .toBuffer();
 }
 
 // Try to read index.html for SSR; if it fails, SSR is simply skipped
@@ -114,8 +188,7 @@ app.get('/og-image.png', async (req, res) => {
       return res.send(ogCache.buffer);
     }
 
-    const svg = buildOgSvg(status);
-    const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    const buffer = await buildOgImage(status);
     ogCache = { buffer, cacheKey: key, timestamp: now };
 
     res.set('Content-Type', 'image/png');
