@@ -11,6 +11,7 @@ const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
 
 // Cache scrape results for 15 minutes
@@ -243,7 +244,8 @@ if (indexHtml) {
         '<meta name="twitter:card" content="summary_large_image">'
       );
       // Replace OG image and URL with the actual request host
-      const origin = `${req.protocol}://${req.get('host')}`;
+      const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+      const origin = `${proto}://${req.get('host')}`;
       html = html.replace(/https:\/\/isthegovernmentclosed\.com/g, origin);
 
       // Inject answer text for search-engine crawlers
