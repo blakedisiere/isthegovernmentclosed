@@ -1,15 +1,168 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+let sharp;
+try {
+  sharp = require('sharp');
+} catch (err) {
+  console.warn('sharp not available, OG image generation disabled:', err.message);
+}
 const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
 
 // Cache scrape results for 15 minutes
 let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
+
+// OG image cache
+let ogCache = { buffer: null, cacheKey: null, timestamp: 0 };
+
+// Load font files for Pango text rendering
+const fontsDir = path.join(__dirname, 'fonts');
+let fontFiles = {};
+try {
+  fontFiles = {
+    outfit: path.join(fontsDir, 'Outfit-Regular.ttf'),
+    outfitBold: path.join(fontsDir, 'Outfit-Bold.ttf'),
+    instrumentSerif: path.join(fontsDir, 'InstrumentSerif-Regular.ttf'),
+    spaceMono: path.join(fontsDir, 'SpaceMono-Regular.ttf'),
+  };
+  // Verify files exist
+  Object.values(fontFiles).forEach(f => fs.accessSync(f));
+} catch (err) {
+  console.warn('Could not find OG image fonts:', err.message);
+  fontFiles = {};
+}
+
+function formatDateForOg(dateStr) {
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function createTextSvg(text, fontSize, color, fontFamily, fontWeight, width) {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${Math.round(fontSize * 1.5)}">
+    <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle"
+      font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight || 'normal'}"
+      fill="${color}">${escaped}</text>
+  </svg>`);
+}
+
+async function buildOgImage(status) {
+  const isClosed = status.isClosed;
+  const type = status.type || 'full';
+  const WIDTH = 1200;
+  const HEIGHT = 630;
+
+  let bgHex, answerText, answerColor, subtitle;
+  if (!isClosed) {
+    bgHex = '#07080c';
+    answerText = 'No';
+    answerColor = '#4ade80';
+    subtitle = 'The government is open.';
+  } else if (type === 'partial') {
+    bgHex = '#0c0b06';
+    answerText = 'Partially';
+    answerColor = '#fbbf24';
+    const days = status.since ? daysBetween(status.since, null) : null;
+    subtitle = status.since
+      ? `Since ${formatDateForOg(status.since)}` + (days ? ` \u00b7 ${days} day${days !== 1 ? 's' : ''}` : '')
+      : 'A partial government shutdown is underway.';
+  } else {
+    bgHex = '#0c0606';
+    answerText = 'Yes';
+    answerColor = '#ef4444';
+    const days = status.since ? daysBetween(status.since, null) : null;
+    subtitle = status.since
+      ? `Since ${formatDateForOg(status.since)}` + (days ? ` \u00b7 ${days} day${days !== 1 ? 's' : ''}` : '')
+      : 'The government is shut down.';
+  }
+
+  // Parse background hex to RGB
+  const bgR = parseInt(bgHex.slice(1, 3), 16);
+  const bgG = parseInt(bgHex.slice(3, 5), 16);
+  const bgB = parseInt(bgHex.slice(5, 7), 16);
+
+  // Use Pango text rendering via sharp's text input
+  const headerBuf = await sharp({
+    text: {
+      text: `<span foreground="#9ca3af" size="48000">Is the government closed?</span>`,
+      fontfile: fontFiles.instrumentSerif || undefined,
+      rgba: true,
+      width: WIDTH - 80,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  const answerBuf = await sharp({
+    text: {
+      text: `<span foreground="${answerColor}" size="200000">${answerText}</span>`,
+      fontfile: fontFiles.instrumentSerif || undefined,
+      rgba: true,
+      width: WIDTH - 80,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  // Add glow: blur a copy of the answer text and composite under original
+  const answerMeta = await sharp(answerBuf).metadata();
+  const glowBuf = await sharp(answerBuf)
+    .blur(15)
+    .toBuffer();
+
+  const subtitleBuf = await sharp({
+    text: {
+      text: `<span foreground="#9ca3af" size="32000">${subtitle.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`,
+      fontfile: fontFiles.outfit || undefined,
+      rgba: true,
+      width: WIDTH - 80,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  const domainBuf = await sharp({
+    text: {
+      text: '<span foreground="#6b7280" size="24000">isthegovernmentclosed.com</span>',
+      fontfile: fontFiles.spaceMono || undefined,
+      rgba: true,
+      width: WIDTH - 80,
+      align: 'centre',
+    },
+  }).png().toBuffer();
+
+  // Get dimensions for centering
+  const headerMeta = await sharp(headerBuf).metadata();
+  const subtitleMeta = await sharp(subtitleBuf).metadata();
+  const domainMeta = await sharp(domainBuf).metadata();
+
+  // Layout: center everything horizontally, spread vertically
+  const headerY = 60;
+  const answerY = Math.round((HEIGHT - answerMeta.height) / 2) - 40;
+  const subtitleY = answerY + answerMeta.height + 10;
+  const domainY = HEIGHT - domainMeta.height - 20;
+
+  return sharp({
+    create: {
+      width: WIDTH,
+      height: HEIGHT,
+      channels: 4,
+      background: { r: bgR, g: bgG, b: bgB, alpha: 255 },
+    },
+  })
+    .composite([
+      { input: headerBuf, left: Math.round((WIDTH - headerMeta.width) / 2), top: headerY },
+      { input: glowBuf, left: Math.round((WIDTH - answerMeta.width) / 2), top: answerY },
+      { input: answerBuf, left: Math.round((WIDTH - answerMeta.width) / 2), top: answerY },
+      { input: subtitleBuf, left: Math.round((WIDTH - subtitleMeta.width) / 2), top: subtitleY },
+      { input: domainBuf, left: Math.round((WIDTH - domainMeta.width) / 2), top: domainY },
+    ])
+    .png()
+    .toBuffer();
+}
 
 // Try to read index.html for SSR; if it fails, SSR is simply skipped
 let indexHtml = null;
@@ -18,6 +171,35 @@ try {
 } catch (err) {
   console.warn('Could not read index.html for SSR, falling back to static serving:', err.message);
 }
+
+// OG image route — must be before express.static
+app.get('/og-image.png', async (req, res) => {
+  if (!sharp) {
+    return res.status(503).send('Image generation not available');
+  }
+  try {
+    const status = getShutdownStatus();
+    const days = status.since ? daysBetween(status.since, null) : 0;
+    const key = `${status.isClosed}-${status.type || 'none'}-${days}`;
+    const now = Date.now();
+
+    if (ogCache.cacheKey === key && ogCache.buffer && now - ogCache.timestamp < CACHE_TTL) {
+      res.set('Content-Type', 'image/png');
+      res.set('Cache-Control', 'public, max-age=900');
+      return res.send(ogCache.buffer);
+    }
+
+    const buffer = await buildOgImage(status);
+    ogCache = { buffer, cacheKey: key, timestamp: now };
+
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=900');
+    res.send(buffer);
+  } catch (err) {
+    console.error('OG image generation failed:', err.message);
+    res.status(500).send('Image generation failed');
+  }
+});
 
 // SSR route — inject initial status into HTML to avoid flash of loading state
 if (indexHtml) {
@@ -30,6 +212,41 @@ if (indexHtml) {
       };
       const script = `<script>window.__STATUS__=${JSON.stringify(initialData)}</script>`;
       let html = indexHtml.replace('</head>', script + '</head>');
+
+      // Dynamic OG description
+      let ogDescription;
+      if (!status.isClosed) {
+        ogDescription = 'No — the US Federal Government is currently open.';
+      } else if (status.type === 'partial') {
+        const days = status.since ? daysBetween(status.since, null) : null;
+        ogDescription = `Partially — a partial shutdown has been underway` +
+          (status.since ? ` since ${formatDateForOg(status.since)}` : '') +
+          (days ? ` (${days} day${days !== 1 ? 's' : ''})` : '') + '.';
+      } else {
+        const days = status.since ? daysBetween(status.since, null) : null;
+        ogDescription = `Yes — the government has been shut down` +
+          (status.since ? ` since ${formatDateForOg(status.since)}` : '') +
+          (days ? ` (${days} day${days !== 1 ? 's' : ''})` : '') + '.';
+      }
+
+      // Replace static OG/Twitter descriptions with dynamic ones
+      html = html.replace(
+        /<meta property="og:description" content="[^"]*">/,
+        `<meta property="og:description" content="${ogDescription}">`
+      );
+      html = html.replace(
+        /<meta name="twitter:description" content="[^"]*">/,
+        `<meta name="twitter:description" content="${ogDescription}">`
+      );
+      // Upgrade twitter card to large image
+      html = html.replace(
+        /<meta name="twitter:card" content="[^"]*">/,
+        '<meta name="twitter:card" content="summary_large_image">'
+      );
+      // Replace OG image and URL with the actual request host
+      const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+      const origin = `${proto}://${req.get('host')}`;
+      html = html.replace(/https:\/\/isthegovernmentclosed\.com/g, origin);
 
       // Inject answer text for search-engine crawlers
       const answerText = status.isClosed
