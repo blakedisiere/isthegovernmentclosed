@@ -50,59 +50,95 @@ function daysBetween(startStr, endStr) {
   return Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
 }
 
-// Fetch and render status
+// Compute shutdown status from local data
+function getLocalStatus() {
+  const today = new Date().toISOString().split('T')[0];
+
+  const ongoing = SHUTDOWNS.find(
+    (s) => s.end === null || (s.start <= today && s.end >= today)
+  );
+
+  if (ongoing) {
+    const type = ongoing.type || 'full';
+    const partial = type === 'partial';
+    const closedWord = partial ? 'partially closed' : 'closed';
+    return {
+      isClosed: true,
+      type,
+      since: ongoing.start,
+      message: `The government has been ${closedWord} since ${formatDate(ongoing.start)}.`,
+    };
+  }
+
+  const past = SHUTDOWNS.filter((s) => s.end && s.end < today).sort(
+    (a, b) => b.end.localeCompare(a.end)
+  );
+  const last = past[0] || null;
+
+  return {
+    isClosed: false,
+    type: null,
+    message: last
+      ? `The last government closure was ${formatDate(last.start)} – ${formatDate(last.end)}.`
+      : 'No recorded government closures.',
+  };
+}
+
+// Render status data into the DOM
+function renderStatus(data) {
+  answerEl.classList.remove('loading');
+
+  if (data.isClosed && data.type === 'partial') {
+    answerEl.textContent = 'Partially';
+    answerEl.className = 'answer partial fade-in';
+    dotEl.className = 'status-dot partial';
+    document.body.className = 'partial-shutdown';
+
+    if (data.since) {
+      const days = daysBetween(data.since, null);
+      counterNumber.textContent = days;
+      counterSection.classList.remove('hidden');
+    }
+  } else if (data.isClosed) {
+    answerEl.textContent = 'Yes';
+    answerEl.className = 'answer yes fade-in';
+    dotEl.className = 'status-dot closed';
+    document.body.className = 'shutdown';
+
+    if (data.since) {
+      const days = daysBetween(data.since, null);
+      counterNumber.textContent = days;
+      counterSection.classList.remove('hidden');
+    }
+  } else {
+    answerEl.textContent = 'No';
+    answerEl.className = 'answer no fade-in';
+    dotEl.className = 'status-dot open';
+    document.body.className = '';
+    counterSection.classList.add('hidden');
+  }
+
+  detailEl.textContent = data.message;
+
+  // Render source footnotes
+  renderSourceFootnotes(data);
+
+  // Update last checked
+  if (data.lastScraped) {
+    const d = new Date(data.lastScraped);
+    lastCheckedEl.textContent = 'Last checked: ' + d.toLocaleString();
+  }
+}
+
+// Fetch status from API, fall back to local computation
 async function fetchStatus() {
   try {
     const res = await fetch('/api/status');
     const data = await res.json();
-
-    answerEl.classList.remove('loading');
-
-    if (data.isClosed && data.type === 'partial') {
-      answerEl.textContent = 'Partially';
-      answerEl.className = 'answer partial fade-in';
-      dotEl.className = 'status-dot partial';
-      document.body.className = 'partial-shutdown';
-
-      if (data.since) {
-        const days = daysBetween(data.since, null);
-        counterNumber.textContent = days;
-        counterSection.classList.remove('hidden');
-      }
-    } else if (data.isClosed) {
-      answerEl.textContent = 'Yes';
-      answerEl.className = 'answer yes fade-in';
-      dotEl.className = 'status-dot closed';
-      document.body.className = 'shutdown';
-
-      if (data.since) {
-        const days = daysBetween(data.since, null);
-        counterNumber.textContent = days;
-        counterSection.classList.remove('hidden');
-      }
-    } else {
-      answerEl.textContent = 'No';
-      answerEl.className = 'answer no fade-in';
-      dotEl.className = 'status-dot open';
-      document.body.className = '';
-      counterSection.classList.add('hidden');
-    }
-
-    detailEl.textContent = data.message;
-
-    // Render source footnotes
-    renderSourceFootnotes(data);
-
-    // Update last checked
-    if (data.lastScraped) {
-      const d = new Date(data.lastScraped);
-      lastCheckedEl.textContent = 'Last checked: ' + d.toLocaleString();
-    }
+    renderStatus(data);
   } catch (err) {
-    answerEl.textContent = '?';
-    answerEl.className = 'answer loading';
-    dotEl.className = 'status-dot';
-    detailEl.textContent = 'Unable to determine status. Please try again later.';
+    // API unavailable (e.g. static hosting) — use client-side data
+    renderStatus(getLocalStatus());
   }
 }
 

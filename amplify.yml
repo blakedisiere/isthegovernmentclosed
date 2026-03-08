@@ -1,13 +1,10 @@
 version: 1
 frontend:
   phases:
-    preBuild:
-      commands:
-        - npm install
     build:
       commands:
-        - echo "No build step required"
+        - echo "Static site — no build step"
   artifacts:
-    baseDirectory: .
+    baseDirectory: public
     files:
       - '**/*'
