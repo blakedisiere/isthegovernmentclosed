@@ -50,16 +50,20 @@ function formatShortDate(dateStr) {
 
 // Animate counter from 0 to target value
 function animateCounter(target) {
-  const duration = 1000;
-  const start = performance.now();
-  function tick(now) {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-    counterNumber.textContent = Math.round(eased * target);
-    if (progress < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
+  counterNumber.textContent = '0';
+  // Delay start so the section's reveal-up animation (0.8s delay + 0.6s duration) is visible
+  setTimeout(() => {
+    const duration = 1000;
+    const start = performance.now();
+    function tick(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      counterNumber.textContent = Math.round(eased * target);
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }, 900);
 }
 
 // Remove shimmer loading state
@@ -84,9 +88,9 @@ function renderStatus(data) {
     themeColorEl.setAttribute('content', '#0c0b06');
 
     if (data.daysClosed) {
-      animateCounter(data.daysClosed);
       counterSection.setAttribute('aria-label', 'Government partially closed for ' + data.daysClosed + ' days');
       counterSection.classList.remove('hidden');
+      animateCounter(data.daysClosed);
     }
     announceToScreenReader('The government is partially closed.');
   } else if (data.isClosed) {
@@ -99,9 +103,9 @@ function renderStatus(data) {
     themeColorEl.setAttribute('content', '#0c0606');
 
     if (data.daysClosed) {
-      animateCounter(data.daysClosed);
       counterSection.setAttribute('aria-label', 'Government closed for ' + data.daysClosed + ' days');
       counterSection.classList.remove('hidden');
+      animateCounter(data.daysClosed);
     }
     announceToScreenReader('Yes, the government is closed.');
   } else {
