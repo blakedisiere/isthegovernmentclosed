@@ -1,8 +1,58 @@
-async function fetchStatus() {
-  const answerEl = document.getElementById('answer');
-  const detailEl = document.getElementById('detail');
-  const sourceEl = document.getElementById('source');
+// Historical shutdowns for timeline (matches src/shutdowns.js)
+const SHUTDOWNS = [
+  { start: '1976-09-30', end: '1976-10-11' },
+  { start: '1977-09-30', end: '1977-10-13' },
+  { start: '1977-10-31', end: '1977-11-09' },
+  { start: '1977-11-30', end: '1977-12-09' },
+  { start: '1978-09-30', end: '1978-10-18' },
+  { start: '1979-09-30', end: '1979-10-12' },
+  { start: '1981-11-20', end: '1981-11-23' },
+  { start: '1982-09-30', end: '1982-10-02' },
+  { start: '1982-12-17', end: '1982-12-21' },
+  { start: '1983-11-10', end: '1983-11-14' },
+  { start: '1984-09-30', end: '1984-10-03' },
+  { start: '1984-10-03', end: '1984-10-05' },
+  { start: '1986-10-16', end: '1986-10-18' },
+  { start: '1987-12-18', end: '1987-12-20' },
+  { start: '1990-10-05', end: '1990-10-09' },
+  { start: '1995-11-13', end: '1995-11-19' },
+  { start: '1995-12-16', end: '1996-01-06' },
+  { start: '2013-10-01', end: '2013-10-17' },
+  { start: '2018-01-20', end: '2018-01-22' },
+  { start: '2018-02-09', end: '2018-02-09' },
+  { start: '2018-12-22', end: '2019-01-25' },
+  { start: '2025-10-01', end: '2025-11-12' },
+  { start: '2026-02-14', end: null },
+];
 
+// DOM refs
+const answerEl = document.getElementById('answer');
+const detailEl = document.getElementById('detail');
+const dotEl = document.getElementById('status-dot');
+const counterSection = document.getElementById('counter-section');
+const counterNumber = document.getElementById('counter-number');
+const sourcesSection = document.getElementById('sources-section');
+const sourcesGrid = document.getElementById('sources-grid');
+const lastCheckedEl = document.getElementById('last-checked');
+const timelineEl = document.getElementById('timeline');
+
+// Format date for display
+function formatDate(dateStr) {
+  if (!dateStr) return 'Present';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Calculate days between two date strings (or today if end is null)
+function daysBetween(startStr, endStr) {
+  const start = new Date(startStr + 'T00:00:00');
+  const end = endStr ? new Date(endStr + 'T00:00:00') : new Date();
+  return Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+}
+
+// Fetch and render status
+async function fetchStatus() {
   try {
     const res = await fetch('/api/status');
     const data = await res.json();
@@ -11,27 +61,104 @@ async function fetchStatus() {
 
     if (data.isClosed) {
       answerEl.textContent = 'Yes';
-      answerEl.className = 'answer yes';
-      document.body.className = 'closed';
+      answerEl.className = 'answer yes fade-in';
+      dotEl.className = 'status-dot closed';
+      document.body.className = 'shutdown';
+
+      // Show day counter
+      if (data.since) {
+        const days = daysBetween(data.since, null);
+        counterNumber.textContent = days;
+        counterSection.classList.remove('hidden');
+      }
     } else {
       answerEl.textContent = 'No';
-      answerEl.className = 'answer no';
-      document.body.className = 'open';
+      answerEl.className = 'answer no fade-in';
+      dotEl.className = 'status-dot open';
+      document.body.className = '';
+      counterSection.classList.add('hidden');
     }
 
     detailEl.textContent = data.message;
 
+    // Render live sources
+    renderSources(data);
+
+    // Update last checked
     if (data.lastScraped) {
-      const scraped = new Date(data.lastScraped);
-      sourceEl.textContent = 'Last checked: ' + scraped.toLocaleString();
+      const d = new Date(data.lastScraped);
+      lastCheckedEl.textContent = 'Last checked: ' + d.toLocaleString();
     }
   } catch (err) {
     answerEl.textContent = '?';
-    answerEl.classList.remove('loading');
+    answerEl.className = 'answer loading';
+    dotEl.className = 'status-dot';
     detailEl.textContent = 'Unable to determine status. Please try again later.';
   }
 }
 
+// Render source cards
+function renderSources(data) {
+  if (!data.liveCheck) return;
+
+  const sources = [];
+
+  if (data.liveCheck.sources) {
+    data.liveCheck.sources.forEach(s => {
+      sources.push({ name: s.name, status: data.liveCheck.closed ? 'closed' : 'open' });
+    });
+  }
+
+  if (data.liveCheck.errors) {
+    data.liveCheck.errors.forEach(s => {
+      sources.push({ name: s.name, status: 'error' });
+    });
+  }
+
+  if (sources.length === 0) return;
+
+  sourcesSection.classList.remove('hidden');
+  sourcesGrid.innerHTML = sources.map(s => `
+    <div class="source-card">
+      <span class="source-indicator ${s.status}"></span>
+      <span class="source-name">${escapeHtml(s.name)}</span>
+      <span class="source-status">${s.status === 'error' ? 'Unavailable' : s.status === 'closed' ? 'Closed' : 'Open'}</span>
+    </div>
+  `).join('');
+}
+
+// Render shutdown timeline (newest first)
+function renderTimeline() {
+  const sorted = [...SHUTDOWNS].reverse();
+
+  timelineEl.innerHTML = sorted.map(s => {
+    const ongoing = s.end === null;
+    const days = daysBetween(s.start, s.end);
+    const daysLabel = days === 1 ? '1 day' : `${days} days`;
+    const range = `${formatDate(s.start)} – ${ongoing ? 'Present' : formatDate(s.end)}`;
+
+    return `
+      <div class="timeline-item${ongoing ? ' ongoing' : ''}">
+        <div class="timeline-bar"></div>
+        <div class="timeline-dates">
+          <div class="timeline-range">${range}</div>
+          <div class="timeline-duration">${daysLabel}</div>
+        </div>
+        <span class="timeline-days">${daysLabel}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Initialize
+renderTimeline();
 fetchStatus();
 
 // Refresh every 15 minutes
