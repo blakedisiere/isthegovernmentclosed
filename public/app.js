@@ -31,8 +31,7 @@ const detailEl = document.getElementById('detail');
 const dotEl = document.getElementById('status-dot');
 const counterSection = document.getElementById('counter-section');
 const counterNumber = document.getElementById('counter-number');
-const sourcesSection = document.getElementById('sources-section');
-const sourcesGrid = document.getElementById('sources-grid');
+const sourcesLineEl = document.getElementById('sources-line');
 const lastCheckedEl = document.getElementById('last-checked');
 const timelineEl = document.getElementById('timeline');
 
@@ -81,8 +80,8 @@ async function fetchStatus() {
 
     detailEl.textContent = data.message;
 
-    // Render live sources
-    renderSources(data);
+    // Render source footnotes
+    renderSourceFootnotes(data);
 
     // Update last checked
     if (data.lastScraped) {
@@ -97,34 +96,21 @@ async function fetchStatus() {
   }
 }
 
-// Render source cards
-function renderSources(data) {
+// Render sources as a footnote line
+function renderSourceFootnotes(data) {
   if (!data.liveCheck) return;
 
-  const sources = [];
-
+  const names = [];
   if (data.liveCheck.sources) {
-    data.liveCheck.sources.forEach(s => {
-      sources.push({ name: s.name, status: data.liveCheck.closed ? 'closed' : 'open' });
-    });
+    data.liveCheck.sources.forEach(s => names.push(s.name));
   }
-
   if (data.liveCheck.errors) {
-    data.liveCheck.errors.forEach(s => {
-      sources.push({ name: s.name, status: 'error' });
-    });
+    data.liveCheck.errors.forEach(s => names.push(s.name));
   }
 
-  if (sources.length === 0) return;
-
-  sourcesSection.classList.remove('hidden');
-  sourcesGrid.innerHTML = sources.map(s => `
-    <div class="source-card">
-      <span class="source-indicator ${s.status}"></span>
-      <span class="source-name">${escapeHtml(s.name)}</span>
-      <span class="source-status">${s.status === 'error' ? 'Unavailable' : s.status === 'closed' ? 'Closed' : 'Open'}</span>
-    </div>
-  `).join('');
+  if (names.length > 0) {
+    sourcesLineEl.textContent = 'Sources checked: ' + names.map(n => escapeHtml(n)).join(', ');
+  }
 }
 
 // Render shutdown timeline (newest first)
