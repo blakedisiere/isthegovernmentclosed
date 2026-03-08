@@ -5,13 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Is the Government Closed?</title>
   <meta name="description" content="Real-time US Federal Government shutdown status tracker">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+  <meta name="theme-color" content="#07080c" id="theme-color">
+  <meta property="og:title" content="Is the Government Closed?">
+  <meta property="og:description" content="Real-time US Federal Government shutdown status tracker">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Is the Government Closed?">
+  <meta name="twitter:description" content="Real-time US Federal Government shutdown status tracker">
+  <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <noscript>
+    <div style="background:#07080c;color:#e2dfd7;font-family:sans-serif;text-align:center;padding:4rem 1.5rem;min-height:100vh;display:flex;align-items:center;justify-content:center;">
+      <p>JavaScript is required to check shutdown status.</p>
+    </div>
+  </noscript>
+  <!-- Skip link for keyboard users -->
+  <a href="#answer" class="skip-link">Skip to main content</a>
+
   <!-- Grain overlay -->
   <div class="grain" aria-hidden="true"></div>
 
@@ -19,29 +34,40 @@
     <!-- Hero -->
     <header class="hero">
       <div class="hero-eyebrow">
-        <span class="eyebrow-icon">
+        <span class="eyebrow-icon" aria-hidden="true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 10h.01"/><path d="M15 10h.01"/></svg>
         </span>
         <span>United States Federal Government</span>
       </div>
       <h1 class="hero-question">Is the government closed?</h1>
       <div class="hero-answer-wrap">
-        <div id="status-indicator" class="status-indicator">
-          <span id="status-dot" class="status-dot"></span>
+        <div id="status-indicator" class="status-indicator" role="status">
+          <span id="status-dot" class="status-dot" aria-hidden="true"></span>
           <span id="status-label" class="status-label">CHECKING</span>
         </div>
-        <div id="answer" class="answer loading">...</div>
+        <div id="answer" class="answer loading shimmer" aria-live="polite" aria-atomic="true">...</div>
       </div>
-      <p id="detail" class="hero-detail"></p>
+      <p id="detail" class="hero-detail shimmer" aria-live="polite"></p>
+      <button id="retry-btn" class="retry-btn hidden" type="button">Retry</button>
+      <button id="share-btn" class="share-btn hidden" type="button" aria-label="Share status">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <span id="share-label">Share</span>
+      </button>
     </header>
 
     <!-- Day Counter (visible during shutdowns) -->
-    <section id="counter-section" class="counter-section hidden">
+    <section id="counter-section" class="counter-section hidden" aria-label="Shutdown duration">
       <div class="counter-inner">
         <span id="counter-number" class="counter-number">0</span>
         <span class="counter-unit">days</span>
       </div>
       <span class="counter-caption">and counting</span>
+    </section>
+
+    <!-- Stats Chart -->
+    <section id="stats-section" class="stats-section hidden" aria-label="Shutdown days by president">
+      <h2 class="stats-title">Days closed by president</h2>
+      <div id="stats-chart" class="stats-chart"></div>
     </section>
 
     <!-- Divider -->
@@ -57,18 +83,15 @@
       </div>
     </section>
   </div>
-  <div class="timeline-section" style="padding: 0 1.5rem 3rem;">
+  <section class="timeline-section" style="padding: 0 1.5rem 3rem;" aria-label="Shutdown timeline details">
     <div id="timeline" class="timeline" style="max-width: 900px; margin: 0 auto;"></div>
-  </div>
+  </section>
   <div class="page">
 
     <!-- Footer -->
     <footer class="footer">
-      <div class="footer-meta">
-        <p id="last-checked" class="footer-line"></p>
-        <p id="sources-line" class="footer-line"></p>
-      </div>
-      <p class="footer-credit">Data sourced from OPM, CRS, and Congress.gov &middot; Auto-refreshes every 15 min</p>
+      <p id="sources-line" class="footer-line">Data sourced from OPM, CRS, and Congress.gov</p>
+      <p id="last-checked" class="footer-line"></p>
     </footer>
   </div>
   <script src="app.js"></script>

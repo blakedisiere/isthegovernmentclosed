@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 
@@ -10,6 +11,33 @@ const PORT = process.env.PORT || 3000;
 let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
 
+// Try to read index.html for SSR; if it fails, SSR is simply skipped
+let indexHtml = null;
+try {
+  indexHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+} catch (err) {
+  console.warn('Could not read index.html for SSR, falling back to static serving:', err.message);
+}
+
+// SSR route — inject initial status into HTML to avoid flash of loading state
+if (indexHtml) {
+  app.get('/', (req, res) => {
+    try {
+      const status = getShutdownStatus();
+      const initialData = {
+        ...status,
+        daysClosed: status.since ? daysBetween(status.since, null) : null,
+      };
+      const script = `<script>window.__STATUS__=${JSON.stringify(initialData)}</script>`;
+      res.send(indexHtml.replace('</head>', script + '</head>'));
+    } catch (err) {
+      console.error('SSR failed, serving static index.html:', err.message);
+      res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    }
+  });
+}
+
+// Static files — index.html still served normally as fallback
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Helper: days between two dates (or today if end is null)
