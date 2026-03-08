@@ -84,6 +84,66 @@ isthegovernmentclosed/
 └── README.md
 ```
 
+## Deploying to AWS Amplify
+
+This app runs as a Node.js server (not a static site), so it requires Amplify's **SSR/Compute** hosting.
+
+### Option 1: Deploy via Amplify Console
+
+1. Go to the [AWS Amplify Console](https://console.aws.amazon.com/amplify/)
+2. Click **New app** > **Host web app**
+3. Connect your GitHub repository and select the branch to deploy
+4. Amplify will auto-detect the Node.js framework. Set the build settings:
+
+   - **Build command:** `npm install`
+   - **Start command:** `npm start`
+   - **Port:** `3000`
+
+5. If Amplify does not auto-detect the server, add an `amplify.yml` in the project root:
+
+   ```yaml
+   version: 1
+   applications:
+     - appRoot: .
+       frontend:
+         phases:
+           build:
+             commands:
+               - npm install
+         artifacts:
+           baseDirectory: .
+           files:
+             - '**/*'
+   ```
+
+6. Click **Save and deploy**
+
+### Option 2: Deploy via Amplify CLI
+
+```bash
+# Install the Amplify CLI
+npm install -g @aws-amplify/cli
+
+# Initialize Amplify in the project
+amplify init
+
+# Add hosting
+amplify add hosting
+# Select: Hosting with Amplify Console
+# Select: Continuous deployment (or Manual deployment)
+
+# Push to deploy
+amplify publish
+```
+
+### Environment Variables
+
+No environment variables are required. The server defaults to port 3000, which Amplify maps automatically. To override the port, set the `PORT` environment variable in the Amplify Console under **App settings** > **Environment variables**.
+
+### Custom Domain
+
+After deploying, you can add a custom domain in the Amplify Console under **App settings** > **Domain management**. Amplify provisions an SSL certificate automatically.
+
 ## Contributing
 
 ### Adding a new shutdown
