@@ -29,11 +29,15 @@ const SHUTDOWNS = [
 const answerEl = document.getElementById('answer');
 const detailEl = document.getElementById('detail');
 const dotEl = document.getElementById('status-dot');
+const statusIndicator = document.getElementById('status-indicator');
+const statusLabel = document.getElementById('status-label');
 const counterSection = document.getElementById('counter-section');
 const counterNumber = document.getElementById('counter-number');
 const sourcesLineEl = document.getElementById('sources-line');
 const lastCheckedEl = document.getElementById('last-checked');
 const timelineEl = document.getElementById('timeline');
+const shutdownCountEl = document.getElementById('shutdown-count');
+const totalDaysEl = document.getElementById('total-days-closed');
 
 // Format date for display
 function formatDate(dateStr) {
@@ -41,6 +45,19 @@ function formatDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Short date (no year)
+function formatShortDate(dateStr) {
+  if (!dateStr) return 'Present';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Extract year
+function getYear(dateStr) {
+  return dateStr.split('-')[0];
 }
 
 // Calculate days between two date strings (or today if end is null)
@@ -92,6 +109,8 @@ function renderStatus(data) {
     answerEl.textContent = 'Partially';
     answerEl.className = 'answer partial fade-in';
     dotEl.className = 'status-dot partial';
+    statusIndicator.className = 'status-indicator warn';
+    statusLabel.textContent = 'PARTIAL SHUTDOWN';
     document.body.className = 'partial-shutdown';
 
     if (data.since) {
@@ -103,6 +122,8 @@ function renderStatus(data) {
     answerEl.textContent = 'Yes';
     answerEl.className = 'answer yes fade-in';
     dotEl.className = 'status-dot closed';
+    statusIndicator.className = 'status-indicator alert';
+    statusLabel.textContent = 'SHUTDOWN';
     document.body.className = 'shutdown';
 
     if (data.since) {
@@ -114,19 +135,18 @@ function renderStatus(data) {
     answerEl.textContent = 'No';
     answerEl.className = 'answer no fade-in';
     dotEl.className = 'status-dot open';
+    statusIndicator.className = 'status-indicator live';
+    statusLabel.textContent = 'OPERATING';
     document.body.className = '';
     counterSection.classList.add('hidden');
   }
 
   detailEl.textContent = data.message;
-
-  // Render source footnotes
   renderSourceFootnotes(data);
 
-  // Update last checked
   if (data.lastScraped) {
     const d = new Date(data.lastScraped);
-    lastCheckedEl.textContent = 'Last checked: ' + d.toLocaleString();
+    lastCheckedEl.textContent = 'Last checked ' + d.toLocaleString();
   }
 }
 
@@ -137,7 +157,6 @@ async function fetchStatus() {
     const data = await res.json();
     renderStatus(data);
   } catch (err) {
-    // API unavailable (e.g. static hosting) — use client-side data
     renderStatus(getLocalStatus());
   }
 }
@@ -155,31 +174,45 @@ function renderSourceFootnotes(data) {
   }
 
   if (names.length > 0) {
-    sourcesLineEl.textContent = 'Sources checked: ' + names.map(n => escapeHtml(n)).join(', ');
+    sourcesLineEl.textContent = 'Sources: ' + names.map(n => escapeHtml(n)).join(', ');
   }
 }
 
-// Render shutdown timeline (newest first)
+// Render shutdown timeline with proportional bars
 function renderTimeline() {
   const sorted = [...SHUTDOWNS].reverse();
 
-  timelineEl.innerHTML = sorted.map(s => {
+  // Find max duration for proportional bars
+  const maxDays = Math.max(...SHUTDOWNS.map(s => daysBetween(s.start, s.end)));
+
+  // Compute stats
+  const totalDays = SHUTDOWNS.reduce((sum, s) => sum + daysBetween(s.start, s.end), 0);
+  shutdownCountEl.textContent = SHUTDOWNS.length;
+  totalDaysEl.textContent = totalDays.toLocaleString();
+
+  timelineEl.innerHTML = sorted.map((s, i) => {
     const ongoing = s.end === null;
     const isPartial = s.type === 'partial';
     const days = daysBetween(s.start, s.end);
     const daysLabel = days === 1 ? '1 day' : `${days} days`;
-    const range = `${formatDate(s.start)} – ${ongoing ? 'Present' : formatDate(s.end)}`;
+    const barWidth = Math.max(2, (days / maxDays) * 100);
+    const year = getYear(s.start);
+    const range = `${formatShortDate(s.start)} – ${ongoing ? 'Present' : formatShortDate(s.end)}`;
     const classes = ['timeline-item', ongoing ? 'ongoing' : '', isPartial ? 'partial' : ''].filter(Boolean).join(' ');
-    const typeLabel = isPartial ? ' <span class="timeline-type">partial</span>' : '';
+    const typeTag = isPartial ? ' <span class="timeline-type">partial</span>' : '';
+    const delay = Math.min(i * 0.04, 1.2);
 
     return `
-      <div class="${classes}">
-        <div class="timeline-bar"></div>
-        <div class="timeline-dates">
-          <div class="timeline-range">${range}${typeLabel}</div>
-          <div class="timeline-duration">${daysLabel}</div>
+      <div class="${classes}" style="animation-delay: ${delay}s">
+        <span class="timeline-year">${year}</span>
+        <div class="timeline-bar-wrap">
+          <div class="timeline-bar" style="width: ${barWidth}%"></div>
+          <span class="timeline-bar-label">${range}</span>
         </div>
-        <span class="timeline-days">${daysLabel}</span>
+        <div class="timeline-meta">
+          <span class="timeline-days">${daysLabel}${typeTag}</span>
+          <div class="timeline-range">${range}</div>
+        </div>
       </div>
     `;
   }).join('');

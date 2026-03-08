@@ -6,40 +6,65 @@
   <title>Is the Government Closed?</title>
   <meta name="description" content="Real-time US Federal Government shutdown status tracker">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Grain overlay -->
+  <div class="grain" aria-hidden="true"></div>
+
   <div class="page">
-    <!-- Status Section -->
-    <header class="status-section">
-      <p class="question">Is the US Federal Government closed?</p>
-      <div class="answer-row">
-        <span id="status-dot" class="status-dot"></span>
-        <h1 id="answer" class="answer loading">...</h1>
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 10h.01"/><path d="M15 10h.01"/></svg>
+        </span>
+        <span>United States Federal Government</span>
       </div>
-      <p id="detail" class="detail"></p>
+      <h1 class="hero-question">Is the government closed?</h1>
+      <div class="hero-answer-wrap">
+        <div id="status-indicator" class="status-indicator">
+          <span id="status-dot" class="status-dot"></span>
+          <span id="status-label" class="status-label">CHECKING</span>
+        </div>
+        <div id="answer" class="answer loading">...</div>
+      </div>
+      <p id="detail" class="hero-detail"></p>
     </header>
 
     <!-- Day Counter (visible during shutdowns) -->
     <section id="counter-section" class="counter-section hidden">
-      <div class="counter-card">
+      <div class="counter-inner">
         <span id="counter-number" class="counter-number">0</span>
-        <span class="counter-label">days closed</span>
+        <span class="counter-unit">days</span>
       </div>
+      <span class="counter-caption">and counting</span>
     </section>
+
+    <!-- Divider -->
+    <div class="divider">
+      <span class="divider-label">Shutdown Record</span>
+    </div>
 
     <!-- Historical Timeline -->
     <section class="timeline-section">
-      <h2 class="section-title">Shutdown History</h2>
-      <p class="section-subtitle">All US federal government shutdowns since 1976</p>
+      <div class="timeline-header">
+        <h2 class="timeline-title">Every federal shutdown since 1976</h2>
+        <p class="timeline-subtitle"><span id="shutdown-count">0</span> shutdowns &middot; <span id="total-days-closed">0</span> total days closed</p>
+      </div>
       <div id="timeline" class="timeline"></div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
-      <p id="last-checked" class="last-checked"></p>
-      <p id="sources-line" class="sources-line"></p>
-      <p class="footer-note">Data from OPM, Congress.gov, and historical records. Auto-refreshes every 15 minutes.</p>
+      <div class="footer-meta">
+        <p id="last-checked" class="footer-line"></p>
+        <p id="sources-line" class="footer-line"></p>
+      </div>
+      <p class="footer-credit">Data sourced from OPM, CRS, and Congress.gov &middot; Auto-refreshes every 15 min</p>
     </footer>
   </div>
   <script src="app.js"></script>
