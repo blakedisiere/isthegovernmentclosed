@@ -22,7 +22,7 @@ const SHUTDOWNS = [
   { start: '2018-02-09', end: '2018-02-09' },
   { start: '2018-12-22', end: '2019-01-25' },
   { start: '2025-10-01', end: '2025-11-12' },
-  { start: '2026-02-14', end: null },
+  { start: '2026-02-14', end: null, type: 'partial' },
 ];
 
 // DOM refs
@@ -58,13 +58,23 @@ async function fetchStatus() {
 
     answerEl.classList.remove('loading');
 
-    if (data.isClosed) {
+    if (data.isClosed && data.type === 'partial') {
+      answerEl.textContent = 'Partially';
+      answerEl.className = 'answer partial fade-in';
+      dotEl.className = 'status-dot partial';
+      document.body.className = 'partial-shutdown';
+
+      if (data.since) {
+        const days = daysBetween(data.since, null);
+        counterNumber.textContent = days;
+        counterSection.classList.remove('hidden');
+      }
+    } else if (data.isClosed) {
       answerEl.textContent = 'Yes';
       answerEl.className = 'answer yes fade-in';
       dotEl.className = 'status-dot closed';
       document.body.className = 'shutdown';
 
-      // Show day counter
       if (data.since) {
         const days = daysBetween(data.since, null);
         counterNumber.textContent = days;
@@ -119,15 +129,18 @@ function renderTimeline() {
 
   timelineEl.innerHTML = sorted.map(s => {
     const ongoing = s.end === null;
+    const isPartial = s.type === 'partial';
     const days = daysBetween(s.start, s.end);
     const daysLabel = days === 1 ? '1 day' : `${days} days`;
     const range = `${formatDate(s.start)} – ${ongoing ? 'Present' : formatDate(s.end)}`;
+    const classes = ['timeline-item', ongoing ? 'ongoing' : '', isPartial ? 'partial' : ''].filter(Boolean).join(' ');
+    const typeLabel = isPartial ? ' <span class="timeline-type">partial</span>' : '';
 
     return `
-      <div class="timeline-item${ongoing ? ' ongoing' : ''}">
+      <div class="${classes}">
         <div class="timeline-bar"></div>
         <div class="timeline-dates">
-          <div class="timeline-range">${range}</div>
+          <div class="timeline-range">${range}${typeLabel}</div>
           <div class="timeline-duration">${daysLabel}</div>
         </div>
         <span class="timeline-days">${daysLabel}</span>

@@ -33,8 +33,14 @@ app.get('/api/status', async (req, res) => {
     const closedSignals = scrapeCache.data.filter((r) => r.closed === true);
     const errorSignals = scrapeCache.data.filter((r) => r.error);
     if (closedSignals.length > 0) {
+      // If any source says 'full', treat as full; otherwise 'partial'
+      const hasFullSignal = closedSignals.some((s) => s.type === 'full');
+      const hasPartialSignal = closedSignals.some((s) => s.type === 'partial');
+      const liveType = hasFullSignal ? 'full' : hasPartialSignal ? 'partial' : undefined;
+
       liveSignal = {
         closed: true,
+        type: liveType,
         sources: closedSignals.map((s) => ({
           name: s.source,
           detail: s.detail || null,
