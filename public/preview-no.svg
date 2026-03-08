@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&amp;family=Space+Mono:wght@400;700&amp;family=Outfit:wght@300;400&amp;display=swap');
+    </style>
+  </defs>
+  <rect width="800" height="500" fill="#07080c"/>
+  <!-- Eyebrow -->
+  <text x="400" y="130" text-anchor="middle" font-family="'Space Mono', monospace" font-size="11" fill="#8a8780" letter-spacing="2" text-decoration="none">
+    <tspan>&#9636;  UNITED STATES FEDERAL GOVERNMENT</tspan>
+  </text>
+  <!-- Question -->
+  <text x="400" y="175" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-size="28" fill="#b0ada5" font-style="italic">Is the government closed?</text>
+  <!-- Status chip -->
+  <rect x="332" y="200" width="136" height="28" rx="14" fill="#0e1017" stroke="#166534" stroke-width="1"/>
+  <circle cx="354" cy="214" r="4" fill="#4ade80"/>
+  <text x="370" y="218" font-family="'Space Mono', monospace" font-size="10" fill="#4ade80" letter-spacing="1.5">OPERATING</text>
+  <!-- Answer -->
+  <text x="400" y="340" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-size="150" fill="#4ade80" opacity="0.95">No</text>
+  <!-- Detail -->
+  <text x="400" y="400" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="16" fill="#b0ada5" font-weight="300">The government is open. The last closure ended January 25, 2019.</text>
+  <!-- Share button -->
+  <rect x="355" y="425" width="90" height="30" rx="5" fill="none" stroke="#1e2030" stroke-width="1"/>
+  <text x="400" y="444" text-anchor="middle" font-family="'Space Mono', monospace" font-size="10" fill="#8a8780" letter-spacing="1">SHARE</text>
+</svg>
