@@ -60,12 +60,12 @@ frontend:
               {
                 "name": "default",
                 "entrypoint": "server.js",
-                "runtime": "nodejs18.x"
+                "runtime": "nodejs20.x"
               }
             ],
             "framework": {
               "name": "express",
-              "version": "4.x"
+              "version": "4.22.1"
             }
           }
           MANIFEST
