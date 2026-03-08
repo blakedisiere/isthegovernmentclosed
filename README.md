@@ -81,6 +81,7 @@ isthegovernmentclosed/
 │   ├── style.css        # Styles (dark theme, responsive)
 │   └── app.js           # Client-side fetch + DOM updates
 ├── package.json
+├── amplify.yml          # AWS Amplify build config
 └── README.md
 ```
 
@@ -93,30 +94,11 @@ This app runs as a Node.js server (not a static site), so it requires Amplify's 
 1. Go to the [AWS Amplify Console](https://console.aws.amazon.com/amplify/)
 2. Click **New app** > **Host web app**
 3. Connect your GitHub repository and select the branch to deploy
-4. Amplify will auto-detect the Node.js framework. Set the build settings:
-
-   - **Build command:** `npm install`
-   - **Start command:** `npm start`
-   - **Port:** `3000`
-
-5. If Amplify does not auto-detect the server, add an `amplify.yml` in the project root:
-
-   ```yaml
-   version: 1
-   applications:
-     - appRoot: .
-       frontend:
-         phases:
-           build:
-             commands:
-               - npm install
-         artifacts:
-           baseDirectory: .
-           files:
-             - '**/*'
-   ```
-
+4. Amplify will auto-detect the framework. The repo includes an `amplify.yml` that configures the build — no manual build settings needed
+5. Change the **Build output directory** from `dist` to `.` (this project has no build step)
 6. Click **Save and deploy**
+
+> **Note:** The included `amplify.yml` runs `npm install` in preBuild and outputs the entire project root as the artifact. There is no compile or bundle step.
 
 ### Option 2: Deploy via Amplify CLI
 
