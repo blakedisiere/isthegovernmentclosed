@@ -3,15 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Is the Government Closed?</title>
-  <meta name="description" content="Real-time US Federal Government shutdown status tracker">
+  <title>Is the Government Closed? | US Federal Government Shutdown Tracker</title>
+  <meta name="description" content="Check if the US Federal Government is shut down right now. Live shutdown status, full history of all government shutdowns since 1976, and days-closed statistics by president.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://isthegovernmentclosed.com/">
   <meta name="theme-color" content="#07080c" id="theme-color">
-  <meta property="og:title" content="Is the Government Closed?">
-  <meta property="og:description" content="Real-time US Federal Government shutdown status tracker">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Is the Government Closed? | US Shutdown Tracker">
+  <meta property="og:description" content="Check if the US Federal Government is shut down right now. Live status, full shutdown history since 1976, and statistics.">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://isthegovernmentclosed.com/">
+  <meta property="og:site_name" content="Is the Government Closed?">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Is the Government Closed?">
-  <meta name="twitter:description" content="Real-time US Federal Government shutdown status tracker">
+  <meta name="twitter:description" content="Check if the US Federal Government is shut down right now. Live status and full shutdown history.">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Is the Government Closed?",
+    "url": "https://isthegovernmentclosed.com/",
+    "description": "Live US Federal Government shutdown status tracker with full history since 1976."
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "Is the US government shut down right now?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Visit isthegovernmentclosed.com for the current live status of the US Federal Government, updated automatically."
+      }
+    }, {
+      "@type": "Question",
+      "name": "How many government shutdowns have there been?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "There have been more than 20 US Federal Government shutdowns since 1976, when the modern budget process began."
+      }
+    }]
+  }
+  </script>
+
   <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,8 +62,10 @@
 </head>
 <body>
   <noscript>
-    <div style="background:#07080c;color:#e2dfd7;font-family:sans-serif;text-align:center;padding:4rem 1.5rem;min-height:100vh;display:flex;align-items:center;justify-content:center;">
-      <p>JavaScript is required to check shutdown status.</p>
+    <div style="background:#07080c;color:#e2dfd7;font-family:sans-serif;text-align:center;padding:4rem 1.5rem;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <h1>Is the Government Closed?</h1>
+      <p style="margin-top:1rem;">Check the current US Federal Government shutdown status. JavaScript is required for live updates.</p>
+      <p style="margin-top:1rem;">This site tracks all US government shutdowns since 1976 with live status from OPM.gov.</p>
     </div>
   </noscript>
   <!-- Skip link for keyboard users -->
@@ -30,6 +74,7 @@
   <!-- Grain overlay -->
   <div class="grain" aria-hidden="true"></div>
 
+  <main>
   <div class="page">
     <!-- Hero -->
     <header class="hero">
@@ -41,11 +86,11 @@
       </div>
       <h1 class="hero-question">Is the government closed?</h1>
       <div class="hero-answer-wrap">
+        <div id="answer" class="answer loading shimmer" aria-live="polite" aria-atomic="true">...</div>
         <div id="status-indicator" class="status-indicator" role="status">
           <span id="status-dot" class="status-dot" aria-hidden="true"></span>
           <span id="status-label" class="status-label">CHECKING</span>
         </div>
-        <div id="answer" class="answer loading shimmer" aria-live="polite" aria-atomic="true">...</div>
       </div>
       <p id="detail" class="hero-detail shimmer" aria-live="polite"></p>
       <button id="retry-btn" class="retry-btn hidden" type="button">Retry</button>
@@ -94,6 +139,7 @@
       <p id="last-checked" class="footer-line"></p>
     </footer>
   </div>
+  </main>
   <script src="app.js"></script>
 </body>
 </html>
