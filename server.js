@@ -1,16 +1,44 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+    },
+  },
+}));
+
+// Rate limiting on API routes
+app.use('/api/', rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
+
 // Cache scrape results for 15 minutes
 let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Read index.html template once at startup
+const indexHtml = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+
+// Serve static files (but not index.html — we handle that below)
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Helper: days between two dates (or today if end is null)
 function daysBetween(startStr, endStr) {
@@ -87,6 +115,17 @@ app.get('/api/status', async (req, res) => {
       ? new Date(scrapeCache.timestamp).toISOString()
       : null,
   });
+});
+
+// Serve index.html with injected initial status
+app.get('/', (req, res) => {
+  const status = getShutdownStatus();
+  const initialData = {
+    ...status,
+    daysClosed: status.since ? daysBetween(status.since, null) : null,
+  };
+  const script = `<script>window.__STATUS__=${JSON.stringify(initialData)}</script>`;
+  res.send(indexHtml.replace('</head>', script + '</head>'));
 });
 
 if (require.main === module) {
