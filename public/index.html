@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Is the Government Closed?</title>
   <meta name="description" content="Real-time US Federal Government shutdown status tracker">
+  <meta name="theme-color" content="#07080c" id="theme-color">
+  <meta property="og:title" content="Is the Government Closed?">
+  <meta property="og:description" content="Real-time US Federal Government shutdown status tracker">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Is the Government Closed?">
+  <meta name="twitter:description" content="Real-time US Federal Government shutdown status tracker">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,6 +19,11 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <noscript>
+    <div style="background:#07080c;color:#e2dfd7;font-family:sans-serif;text-align:center;padding:4rem 1.5rem;min-height:100vh;display:flex;align-items:center;justify-content:center;">
+      <p>JavaScript is required to check shutdown status.</p>
+    </div>
+  </noscript>
   <!-- Skip link for keyboard users -->
   <a href="#answer" class="skip-link">Skip to main content</a>
 
@@ -33,9 +45,10 @@
           <span id="status-dot" class="status-dot" aria-hidden="true"></span>
           <span id="status-label" class="status-label">CHECKING</span>
         </div>
-        <div id="answer" class="answer loading" aria-live="polite" aria-atomic="true">...</div>
+        <div id="answer" class="answer loading shimmer" aria-live="polite" aria-atomic="true">...</div>
       </div>
-      <p id="detail" class="hero-detail" aria-live="polite"></p>
+      <p id="detail" class="hero-detail shimmer" aria-live="polite"></p>
+      <button id="retry-btn" class="retry-btn hidden" type="button">Retry</button>
     </header>
 
     <!-- Day Counter (visible during shutdowns) -->

@@ -17,6 +17,8 @@ function createAnnouncer() {
 }
 
 // DOM refs
+const themeColorEl = document.getElementById('theme-color');
+const retryBtn = document.getElementById('retry-btn');
 const answerEl = document.getElementById('answer');
 const detailEl = document.getElementById('detail');
 const dotEl = document.getElementById('status-dot');
@@ -46,9 +48,31 @@ function formatShortDate(dateStr) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Animate counter from 0 to target value
+function animateCounter(target) {
+  const duration = 1000;
+  const start = performance.now();
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    counterNumber.textContent = Math.round(eased * target);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Remove shimmer loading state
+function clearShimmer() {
+  answerEl.classList.remove('shimmer');
+  detailEl.classList.remove('shimmer');
+}
+
 // Render status data into the DOM
 function renderStatus(data) {
+  clearShimmer();
   answerEl.classList.remove('loading');
+  retryBtn.classList.add('hidden');
 
   if (data.isClosed && data.type === 'partial') {
     answerEl.textContent = 'Partially';
@@ -57,9 +81,10 @@ function renderStatus(data) {
     statusIndicator.className = 'status-indicator warn';
     statusLabel.textContent = 'PARTIAL SHUTDOWN';
     document.body.className = 'partial-shutdown';
+    themeColorEl.setAttribute('content', '#0c0b06');
 
     if (data.daysClosed) {
-      counterNumber.textContent = data.daysClosed;
+      animateCounter(data.daysClosed);
       counterSection.setAttribute('aria-label', 'Government partially closed for ' + data.daysClosed + ' days');
       counterSection.classList.remove('hidden');
     }
@@ -71,9 +96,10 @@ function renderStatus(data) {
     statusIndicator.className = 'status-indicator alert';
     statusLabel.textContent = 'SHUTDOWN';
     document.body.className = 'shutdown';
+    themeColorEl.setAttribute('content', '#0c0606');
 
     if (data.daysClosed) {
-      counterNumber.textContent = data.daysClosed;
+      animateCounter(data.daysClosed);
       counterSection.setAttribute('aria-label', 'Government closed for ' + data.daysClosed + ' days');
       counterSection.classList.remove('hidden');
     }
@@ -85,6 +111,7 @@ function renderStatus(data) {
     statusIndicator.className = 'status-indicator live';
     statusLabel.textContent = 'OPERATING';
     document.body.className = '';
+    themeColorEl.setAttribute('content', '#07080c');
     counterSection.classList.add('hidden');
     announceToScreenReader('No, the government is open.');
   }
@@ -235,13 +262,15 @@ function handleCardKeydown(event, card) {
 
 // Show error state
 function showError() {
+  clearShimmer();
   answerEl.textContent = '?';
   answerEl.className = 'answer loading';
   dotEl.className = 'status-dot';
   statusIndicator.className = 'status-indicator';
   statusLabel.textContent = 'UNAVAILABLE';
-  detailEl.textContent = 'Unable to reach the server. Please try again later.';
-  announceToScreenReader('Error: Unable to reach the server. Please try again later.');
+  detailEl.textContent = 'Unable to reach the server.';
+  retryBtn.classList.remove('hidden');
+  announceToScreenReader('Error: Unable to reach the server.');
 }
 
 // Fetch status from API
@@ -265,6 +294,16 @@ async function fetchTimeline() {
     timelineEl.innerHTML = '<p style="color:var(--text-tertiary);font-size:0.875rem;">Unable to load shutdown history.</p>';
   }
 }
+
+// Retry button
+retryBtn.addEventListener('click', () => {
+  retryBtn.classList.add('hidden');
+  answerEl.textContent = '...';
+  answerEl.className = 'answer loading shimmer';
+  detailEl.textContent = '';
+  detailEl.classList.add('shimmer');
+  fetchStatus();
+});
 
 // Initialize — fetch both endpoints in parallel
 Promise.all([fetchStatus(), fetchTimeline()]);
