@@ -53,12 +53,15 @@ function animateCounter(target) {
   counterNumber.textContent = '0';
   // Delay start so the section's reveal-up animation (0.8s delay + 0.6s duration) is visible
   setTimeout(() => {
-    const duration = 1000;
+    const duration = 2200;
     const start = performance.now();
     function tick(now) {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      // Slow start, fast middle, slow finish (ease-in-out quartic)
+      const eased = progress < 0.5
+        ? 8 * Math.pow(progress, 4)
+        : 1 - 8 * Math.pow(1 - progress, 4);
       counterNumber.textContent = Math.round(eased * target);
       if (progress < 1) requestAnimationFrame(tick);
     }
