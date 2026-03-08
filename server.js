@@ -89,20 +89,20 @@ async function buildOgImage(status) {
   // Use Pango text rendering via sharp's text input
   const headerBuf = await sharp({
     text: {
-      text: `<span foreground="#9ca3af" size="36000">Is the government closed?</span>`,
+      text: `<span foreground="#9ca3af" size="48000">Is the government closed?</span>`,
       fontfile: fontFiles.instrumentSerif || undefined,
       rgba: true,
-      width: WIDTH - 100,
+      width: WIDTH - 80,
       align: 'centre',
     },
   }).png().toBuffer();
 
   const answerBuf = await sharp({
     text: {
-      text: `<span foreground="${answerColor}" size="140000">${answerText}</span>`,
+      text: `<span foreground="${answerColor}" size="200000">${answerText}</span>`,
       fontfile: fontFiles.instrumentSerif || undefined,
       rgba: true,
-      width: WIDTH - 100,
+      width: WIDTH - 80,
       align: 'centre',
     },
   }).png().toBuffer();
@@ -110,25 +110,25 @@ async function buildOgImage(status) {
   // Add glow: blur a copy of the answer text and composite under original
   const answerMeta = await sharp(answerBuf).metadata();
   const glowBuf = await sharp(answerBuf)
-    .blur(12)
+    .blur(15)
     .toBuffer();
 
   const subtitleBuf = await sharp({
     text: {
-      text: `<span foreground="#9ca3af" size="24000">${subtitle.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`,
+      text: `<span foreground="#9ca3af" size="32000">${subtitle.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`,
       fontfile: fontFiles.outfit || undefined,
       rgba: true,
-      width: WIDTH - 100,
+      width: WIDTH - 80,
       align: 'centre',
     },
   }).png().toBuffer();
 
   const domainBuf = await sharp({
     text: {
-      text: '<span foreground="#6b7280" size="20000">isthegovernmentclosed.com</span>',
+      text: '<span foreground="#6b7280" size="24000">isthegovernmentclosed.com</span>',
       fontfile: fontFiles.spaceMono || undefined,
       rgba: true,
-      width: WIDTH - 100,
+      width: WIDTH - 80,
       align: 'centre',
     },
   }).png().toBuffer();
@@ -139,10 +139,10 @@ async function buildOgImage(status) {
   const domainMeta = await sharp(domainBuf).metadata();
 
   // Layout: center everything horizontally, spread vertically
-  const headerY = 100;
-  const answerY = Math.round((HEIGHT - answerMeta.height) / 2) - 30;
-  const subtitleY = answerY + answerMeta.height + 15;
-  const domainY = HEIGHT - domainMeta.height - 30;
+  const headerY = 60;
+  const answerY = Math.round((HEIGHT - answerMeta.height) / 2) - 40;
+  const subtitleY = answerY + answerMeta.height + 10;
+  const domainY = HEIGHT - domainMeta.height - 20;
 
   return sharp({
     create: {
