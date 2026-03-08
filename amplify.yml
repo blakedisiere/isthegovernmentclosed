@@ -1,0 +1,13 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm install
+    build:
+      commands:
+        - echo "No build step"
+  artifacts:
+    baseDirectory: .
+    files:
+      - '**/*'

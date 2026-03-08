@@ -58,8 +58,11 @@ async function checkOPMJson(data) {
     textFields.includes(kw)
   );
 
+  const isPartial = textFields.includes('partial');
+
   return {
     closed: hasShutdownSignal,
+    type: hasShutdownSignal ? (isPartial ? 'partial' : 'full') : undefined,
     source: 'OPM.gov (JSON API)',
     detail: json.StatusSummary || json.ShortStatusMessage || null,
   };
@@ -83,8 +86,10 @@ async function checkOPMHtml(html) {
   );
   const hasOpenSignal = openKeywords.some((kw) => statusText.includes(kw));
 
+  const isPartial = statusText.includes('partial');
+
   if (hasShutdownSignal && !hasOpenSignal) {
-    return { closed: true, source: 'OPM.gov' };
+    return { closed: true, type: isPartial ? 'partial' : 'full', source: 'OPM.gov' };
   }
   return { closed: false, source: 'OPM.gov' };
 }
@@ -129,8 +134,13 @@ async function checkCRSTable(html) {
     }
   });
 
+  // Count total bills to determine if shutdown is partial or full
+  const totalBills = $('table tr').filter((_, row) => $(row).find('td').length > 0).length;
+  const isPartial = unfundedBills.length > 0 && unfundedBills.length < totalBills;
+
   return {
     closed: hasShutdownLanguage,
+    type: hasShutdownLanguage ? (isPartial ? 'partial' : 'full') : undefined,
     source: 'Congress.gov (CRS)',
     detail:
       unfundedBills.length > 0
@@ -172,9 +182,11 @@ async function scrapeWikipedia() {
       ];
 
       const isOngoing = ongoingSignals.some((kw) => text.includes(kw));
+      const isPartial = text.includes('partial shutdown');
 
       return {
         closed: isOngoing,
+        type: isOngoing ? (isPartial ? 'partial' : 'full') : undefined,
         source: 'Wikipedia',
         name: 'Wikipedia Shutdown Article',
         detail: isOngoing ? 'Wikipedia indicates an ongoing shutdown' : null,

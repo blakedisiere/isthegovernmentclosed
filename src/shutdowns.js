@@ -1,7 +1,8 @@
 // Historical US federal government shutdowns
 // Source: Congressional Research Service reports
-// Each entry: { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' | null }
+// Each entry: { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' | null, type?: 'partial' | 'full' }
 // end = null means the shutdown is currently ongoing
+// type defaults to 'full' when omitted
 
 const SHUTDOWNS = [
   { start: '1976-09-30', end: '1976-10-11' },
@@ -26,7 +27,7 @@ const SHUTDOWNS = [
   { start: '2018-02-09', end: '2018-02-09' },
   { start: '2018-12-22', end: '2019-01-25' },
   { start: '2025-10-01', end: '2025-11-12' }, // 43-day shutdown, longest in modern history
-  { start: '2026-02-14', end: null },          // Partial shutdown (DHS funding lapse)
+  { start: '2026-02-14', end: null, type: 'partial', detail: 'DHS funding lapse' },
 ];
 
 function getShutdownStatus() {
@@ -38,10 +39,18 @@ function getShutdownStatus() {
   );
 
   if (ongoing) {
+    const type = ongoing.type || 'full';
+    const partial = type === 'partial';
+    const closedWord = partial ? 'partially closed' : 'closed';
+    const detail = ongoing.detail || null;
+    const detailSuffix = detail ? ` (${detail})` : '';
+
     return {
       isClosed: true,
+      type,
       since: ongoing.start,
-      message: `The government has been closed since ${formatDate(ongoing.start)}.`,
+      detail,
+      message: `The government has been ${closedWord} since ${formatDate(ongoing.start)}.${detailSuffix}`,
     };
   }
 
@@ -54,8 +63,9 @@ function getShutdownStatus() {
 
   return {
     isClosed: false,
+    type: null,
     lastClosure: lastShutdown
-      ? { start: lastShutdown.start, end: lastShutdown.end }
+      ? { start: lastShutdown.start, end: lastShutdown.end, type: lastShutdown.type || 'full' }
       : null,
     message: lastShutdown
       ? `The last government closure was ${formatDate(lastShutdown.start)} – ${formatDate(lastShutdown.end)}.`
@@ -74,10 +84,10 @@ function formatDate(dateStr) {
 }
 
 // Add a shutdown dynamically (e.g., from scraping)
-function addShutdown(start, end = null) {
+function addShutdown(start, end = null, type = 'full') {
   const exists = SHUTDOWNS.find((s) => s.start === start);
   if (!exists) {
-    SHUTDOWNS.push({ start, end });
+    SHUTDOWNS.push({ start, end, type });
     SHUTDOWNS.sort((a, b) => a.start.localeCompare(b.start));
   } else if (end && !exists.end) {
     exists.end = end;
