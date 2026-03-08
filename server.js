@@ -12,6 +12,13 @@ const PORT = process.env.PORT || 3000;
 let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
 
+// Load fonts for OG image generation (embedded as base64 in SVG)
+const fontsDir = path.join(__dirname, 'fonts');
+const fontOutfitRegular = fs.readFileSync(path.join(fontsDir, 'Outfit-Regular.ttf')).toString('base64');
+const fontOutfitBold = fs.readFileSync(path.join(fontsDir, 'Outfit-Bold.ttf')).toString('base64');
+const fontInstrumentSerif = fs.readFileSync(path.join(fontsDir, 'InstrumentSerif-Regular.ttf')).toString('base64');
+const fontSpaceMono = fs.readFileSync(path.join(fontsDir, 'SpaceMono-Regular.ttf')).toString('base64');
+
 // OG image cache
 let ogCache = { buffer: null, cacheKey: null, timestamp: 0 };
 
@@ -50,16 +57,22 @@ function buildOgSvg(status) {
 
   return `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <style>
+      @font-face { font-family: 'Outfit'; font-weight: 400; src: url('data:font/ttf;base64,${fontOutfitRegular}') format('truetype'); }
+      @font-face { font-family: 'Outfit'; font-weight: 700; src: url('data:font/ttf;base64,${fontOutfitBold}') format('truetype'); }
+      @font-face { font-family: 'Instrument Serif'; src: url('data:font/ttf;base64,${fontInstrumentSerif}') format('truetype'); }
+      @font-face { font-family: 'Space Mono'; src: url('data:font/ttf;base64,${fontSpaceMono}') format('truetype'); }
+    </style>
     <filter id="glow">
       <feGaussianBlur stdDeviation="6" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
   <rect width="1200" height="630" fill="${bg}"/>
-  <text x="600" y="160" text-anchor="middle" font-family="sans-serif" font-size="36" fill="#9ca3af">Is the government closed?</text>
-  <text x="600" y="370" text-anchor="middle" font-family="Georgia, serif" font-size="160" font-weight="bold" fill="${answerColor}" filter="url(#glow)">${answerText}</text>
-  <text x="600" y="450" text-anchor="middle" font-family="sans-serif" font-size="28" fill="#9ca3af">${subtitle}</text>
-  <text x="600" y="590" text-anchor="middle" font-family="monospace" font-size="22" fill="#6b7280">isthegovernmentclosed.com</text>
+  <text x="600" y="160" text-anchor="middle" font-family="Outfit" font-size="36" fill="#9ca3af">Is the government closed?</text>
+  <text x="600" y="370" text-anchor="middle" font-family="Instrument Serif" font-size="160" font-weight="bold" fill="${answerColor}" filter="url(#glow)">${answerText}</text>
+  <text x="600" y="450" text-anchor="middle" font-family="Outfit" font-size="28" fill="#9ca3af">${subtitle}</text>
+  <text x="600" y="590" text-anchor="middle" font-family="Space Mono" font-size="22" fill="#6b7280">isthegovernmentclosed.com</text>
 </svg>`;
 }
 
