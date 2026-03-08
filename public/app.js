@@ -388,7 +388,13 @@ shareBtn.addEventListener('click', async () => {
 });
 
 // Initialize — fetch both endpoints in parallel
-Promise.all([fetchStatus(), fetchTimeline()]);
+// Initialize — use SSR data if available, then fetch fresh data
+if (window.__STATUS__) {
+  renderStatus(window.__STATUS__);
+  fetchTimeline();
+} else {
+  Promise.all([fetchStatus(), fetchTimeline()]);
+}
 
 // Refresh status every 15 minutes
 setInterval(fetchStatus, 15 * 60 * 1000);
