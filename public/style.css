@@ -447,14 +447,13 @@ body.partial-shutdown .counter-number {
 /* Dot on the center line */
 .timeline-dot {
   position: absolute;
-  top: 50%;
+  top: 1.125rem;
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: var(--text-tertiary);
   border: 2px solid var(--bg);
   z-index: 2;
-  transform: translateY(-50%);
 }
 
 .timeline-entry.left .timeline-dot {
@@ -478,11 +477,10 @@ body.partial-shutdown .counter-number {
 /* Connector line from dot to card */
 .timeline-connector {
   position: absolute;
-  top: 50%;
+  top: 1.25rem;
   height: 2px;
   background: var(--border);
   z-index: 1;
-  transform: translateY(-50%);
 }
 
 .timeline-entry.left .timeline-connector {
