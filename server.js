@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 
@@ -11,6 +12,57 @@ const PORT = process.env.PORT || 3000;
 let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
 
+// OG image cache
+let ogCache = { buffer: null, cacheKey: null, timestamp: 0 };
+
+function formatDateForOg(dateStr) {
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function buildOgSvg(status) {
+  const isClosed = status.isClosed;
+  const type = status.type || 'full';
+
+  let bg, answerText, answerColor, subtitle;
+  if (!isClosed) {
+    bg = '#07080c';
+    answerText = 'No';
+    answerColor = '#4ade80';
+    subtitle = 'The government is open.';
+  } else if (type === 'partial') {
+    bg = '#0c0b06';
+    answerText = 'Partially';
+    answerColor = '#fbbf24';
+    const days = status.since ? daysBetween(status.since, null) : null;
+    subtitle = status.since
+      ? `Since ${formatDateForOg(status.since)}` + (days ? ` · ${days} day${days !== 1 ? 's' : ''}` : '')
+      : 'A partial government shutdown is underway.';
+  } else {
+    bg = '#0c0606';
+    answerText = 'Yes';
+    answerColor = '#ef4444';
+    const days = status.since ? daysBetween(status.since, null) : null;
+    subtitle = status.since
+      ? `Since ${formatDateForOg(status.since)}` + (days ? ` · ${days} day${days !== 1 ? 's' : ''}` : '')
+      : 'The government is shut down.';
+  }
+
+  return `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="${bg}"/>
+  <text x="600" y="160" text-anchor="middle" font-family="sans-serif" font-size="36" fill="#9ca3af">Is the government closed?</text>
+  <text x="600" y="370" text-anchor="middle" font-family="Georgia, serif" font-size="160" font-weight="bold" fill="${answerColor}" filter="url(#glow)">${answerText}</text>
+  <text x="600" y="450" text-anchor="middle" font-family="sans-serif" font-size="28" fill="#9ca3af">${subtitle}</text>
+  <text x="600" y="590" text-anchor="middle" font-family="monospace" font-size="22" fill="#6b7280">isthegovernmentclosed.com</text>
+</svg>`;
+}
+
 // Try to read index.html for SSR; if it fails, SSR is simply skipped
 let indexHtml = null;
 try {
@@ -18,6 +70,33 @@ try {
 } catch (err) {
   console.warn('Could not read index.html for SSR, falling back to static serving:', err.message);
 }
+
+// OG image route — must be before express.static
+app.get('/og-image.png', async (req, res) => {
+  try {
+    const status = getShutdownStatus();
+    const days = status.since ? daysBetween(status.since, null) : 0;
+    const key = `${status.isClosed}-${status.type || 'none'}-${days}`;
+    const now = Date.now();
+
+    if (ogCache.cacheKey === key && ogCache.buffer && now - ogCache.timestamp < CACHE_TTL) {
+      res.set('Content-Type', 'image/png');
+      res.set('Cache-Control', 'public, max-age=900');
+      return res.send(ogCache.buffer);
+    }
+
+    const svg = buildOgSvg(status);
+    const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    ogCache = { buffer, cacheKey: key, timestamp: now };
+
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=900');
+    res.send(buffer);
+  } catch (err) {
+    console.error('OG image generation failed:', err.message);
+    res.status(500).send('Image generation failed');
+  }
+});
 
 // SSR route — inject initial status into HTML to avoid flash of loading state
 if (indexHtml) {
@@ -30,6 +109,38 @@ if (indexHtml) {
       };
       const script = `<script>window.__STATUS__=${JSON.stringify(initialData)}</script>`;
       let html = indexHtml.replace('</head>', script + '</head>');
+
+      // Dynamic OG description
+      let ogDescription;
+      if (!status.isClosed) {
+        ogDescription = 'No — the US Federal Government is currently open.';
+      } else if (status.type === 'partial') {
+        const days = status.since ? daysBetween(status.since, null) : null;
+        ogDescription = `Partially — a partial shutdown has been underway` +
+          (status.since ? ` since ${formatDateForOg(status.since)}` : '') +
+          (days ? ` (${days} day${days !== 1 ? 's' : ''})` : '') + '.';
+      } else {
+        const days = status.since ? daysBetween(status.since, null) : null;
+        ogDescription = `Yes — the government has been shut down` +
+          (status.since ? ` since ${formatDateForOg(status.since)}` : '') +
+          (days ? ` (${days} day${days !== 1 ? 's' : ''})` : '') + '.';
+      }
+
+      // Replace static OG/Twitter descriptions with dynamic ones
+      html = html.replace(
+        /<meta property="og:description" content="[^"]*">/,
+        `<meta property="og:description" content="${ogDescription}">`
+      );
+      html = html.replace(
+        /<meta name="twitter:description" content="[^"]*">/,
+        `<meta name="twitter:description" content="${ogDescription}">`
+      );
+      // Upgrade twitter card to large image
+      html = html.replace(
+        /<meta name="twitter:card" content="[^"]*">/,
+        '<meta name="twitter:card" content="summary_large_image">'
+      );
+      // OG image tags are already in the static HTML — no injection needed
 
       // Inject answer text for search-engine crawlers
       const answerText = status.isClosed
