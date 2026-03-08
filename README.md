@@ -64,9 +64,32 @@ Returns the current shutdown status as JSON.
 | `since` | string | Start date of current shutdown (only when closed) |
 | `lastClosure` | object | Most recent past shutdown (only when open) |
 | `liveCheck` | object | Results from live source scraping |
+| `daysClosed` | number | Days since shutdown started (only when closed) |
 | `lastScraped` | string | Timestamp of the last scrape |
 
 Scrape results are cached for 15 minutes.
+
+### `GET /api/shutdowns`
+
+Returns the full shutdown history with computed fields.
+
+```json
+{
+  "shutdowns": [
+    { "start": "2018-12-22", "end": "2019-01-25", "type": "full", "days": 35 }
+  ],
+  "count": 23,
+  "totalDays": 195,
+  "maxDays": 43
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `shutdowns` | array | All shutdowns with start, end, type, and computed days |
+| `count` | number | Total number of shutdowns |
+| `totalDays` | number | Sum of all shutdown durations |
+| `maxDays` | number | Longest shutdown in days (for proportional display) |
 
 ## Project Structure
 
@@ -79,7 +102,7 @@ isthegovernmentclosed/
 ├── public/
 │   ├── index.html       # Single-page frontend
 │   ├── style.css        # Styles (dark theme, responsive)
-│   └── app.js           # Client-side fetch + DOM updates
+│   └── app.js           # Client-side rendering (fetches from API)
 ├── package.json
 ├── amplify.yml          # AWS Amplify build config
 └── README.md
@@ -94,11 +117,11 @@ This app runs as a Node.js server (not a static site), so it requires Amplify's 
 1. Go to the [AWS Amplify Console](https://console.aws.amazon.com/amplify/)
 2. Click **New app** > **Host web app**
 3. Connect your GitHub repository and select the branch to deploy
-4. Amplify will auto-detect the framework. The repo includes an `amplify.yml` that configures the build — no manual build settings needed
-5. Change the **Build output directory** from `dist` to `.` (this project has no build step)
+4. Amplify must detect this as an **SSR** app (not static). Ensure the platform is set to **Web Compute** under **App settings** > **General** > **Platform**
+5. The repo includes an `amplify.yml` that handles the build. Set the start command to `npm start` and port to `3000`
 6. Click **Save and deploy**
 
-> **Note:** The included `amplify.yml` runs `npm install` in preBuild and outputs the entire project root as the artifact. There is no compile or bundle step.
+> **Important:** This app requires a running Node.js server. Static hosting will not work — the frontend fetches all data from `/api/status` and `/api/shutdowns` endpoints served by Express.
 
 ### Option 2: Deploy via Amplify CLI
 
