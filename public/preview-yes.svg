@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&amp;family=Space+Mono:wght@400;700&amp;family=Outfit:wght@300;400&amp;display=swap');
+    </style>
+  </defs>
+  <rect width="800" height="500" fill="#0c0606"/>
+  <!-- Eyebrow -->
+  <text x="400" y="130" text-anchor="middle" font-family="'Space Mono', monospace" font-size="11" fill="#8a8780" letter-spacing="2">
+    <tspan>&#9636;  UNITED STATES FEDERAL GOVERNMENT</tspan>
+  </text>
+  <!-- Question -->
+  <text x="400" y="175" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-size="28" fill="#b0ada5" font-style="italic">Is the government closed?</text>
+  <!-- Status chip -->
+  <rect x="340" y="200" width="120" height="28" rx="14" fill="#140c0c" stroke="#991b1b" stroke-width="1"/>
+  <circle cx="362" cy="214" r="4" fill="#ef4444"/>
+  <text x="378" y="218" font-family="'Space Mono', monospace" font-size="10" fill="#ef4444" letter-spacing="1.5">SHUTDOWN</text>
+  <!-- Answer -->
+  <text x="400" y="340" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-size="150" fill="#ef4444" opacity="0.95">Yes</text>
+  <!-- Detail -->
+  <text x="400" y="400" text-anchor="middle" font-family="'Outfit', sans-serif" font-size="16" fill="#b0ada5" font-weight="300">The government has been closed since October 1, 2025.</text>
+  <!-- Day counter hint -->
+  <text x="400" y="445" text-anchor="middle" font-family="'Space Mono', monospace" font-size="36" fill="#ef4444" font-weight="700">43</text>
+  <text x="400" y="465" text-anchor="middle" font-family="'Space Mono', monospace" font-size="11" fill="#b0ada5" letter-spacing="1">DAYS AND COUNTING</text>
+</svg>

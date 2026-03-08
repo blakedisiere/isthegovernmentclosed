@@ -1,18 +1,40 @@
 # isthegovernmentclosed
 
-A simple website that answers one question: **Is the US Federal Government closed?**
+A single-purpose website that answers one question: **Is the US Federal Government closed?**
 
-It scrapes live public sources (like OPM.gov) to determine the current federal operating status and falls back on a curated list of every government shutdown since 1976. The frontend displays a large "Yes" or "No" with contextual details.
+Live-scrapes public sources (OPM.gov) for real-time federal operating status and maintains a curated record of every government shutdown since 1976. Displays a giant answer with contextual details, a day counter during active shutdowns, presidential stats, and a full historical timeline.
 
-![Screenshot](public/preview-desktop.png)
+## Modes
+
+The site has three display modes depending on the current federal operating status.
+
+### Open — "No"
+
+Government is operating normally. Green accent, pulsing status dot.
+
+![Open mode](public/preview-no.svg)
+
+### Full Shutdown — "Yes"
+
+Government is fully shut down. Red accent, urgent pulse, day counter visible.
+
+![Shutdown mode](public/preview-yes.svg)
+
+### Partial Shutdown — "Partially"
+
+One or more agencies have lost funding while others remain open. Amber accent, day counter visible.
+
+![Partial shutdown mode](public/preview-partial.svg)
 
 ## Features
 
 - **Live status** — Scrapes OPM.gov and other public sources for real-time shutdown detection
-- **Historical timeline** — Every US federal government shutdown since 1976
-- **Day counter** — Shows how many days the government has been closed during an active shutdown
+- **Three display modes** — Full shutdown (red), partial shutdown (amber), open (green)
+- **Day counter** — Animated counter showing days closed during active shutdowns
+- **Presidential stats** — Bar chart of total shutdown days by president
+- **Historical timeline** — Every US federal government shutdown since 1976, with expandable descriptions
 - **Auto-refresh** — Re-checks status every 15 minutes
-- **Responsive** — Works on desktop and mobile
+- **Responsive** — Desktop timeline alternates left/right; mobile collapses to single column
 - **No build step** — Vanilla HTML/CSS/JS frontend served by Express
 
 ## Getting Started
@@ -47,8 +69,10 @@ Returns the current shutdown status as JSON.
 ```json
 {
   "isClosed": true,
-  "message": "The government has been closed since February 14, 2026.",
+  "type": "partial",
+  "message": "The government has been partially closed since February 14, 2026.",
   "since": "2026-02-14",
+  "daysClosed": 22,
   "liveCheck": {
     "closed": true,
     "sources": [{ "name": "OPM JSON API" }]
@@ -60,11 +84,12 @@ Returns the current shutdown status as JSON.
 | Field | Type | Description |
 |-------|------|-------------|
 | `isClosed` | boolean | Whether the government is currently shut down |
+| `type` | string | `"full"` or `"partial"` (only when closed) |
 | `message` | string | Human-readable status message |
 | `since` | string | Start date of current shutdown (only when closed) |
+| `daysClosed` | number | Days since shutdown started (only when closed) |
 | `lastClosure` | object | Most recent past shutdown (only when open) |
 | `liveCheck` | object | Results from live source scraping |
-| `daysClosed` | number | Days since shutdown started (only when closed) |
 | `lastScraped` | string | Timestamp of the last scrape |
 
 Scrape results are cached for 15 minutes.
@@ -126,18 +151,9 @@ This app runs as a Node.js server (not a static site), so it requires Amplify's 
 ### Option 2: Deploy via Amplify CLI
 
 ```bash
-# Install the Amplify CLI
 npm install -g @aws-amplify/cli
-
-# Initialize Amplify in the project
 amplify init
-
-# Add hosting
-amplify add hosting
-# Select: Hosting with Amplify Console
-# Select: Continuous deployment (or Manual deployment)
-
-# Push to deploy
+amplify add hosting   # Select: Hosting with Amplify Console
 amplify publish
 ```
 
@@ -159,7 +175,7 @@ Add an entry to the `SHUTDOWNS` array in `src/shutdowns.js`:
 { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }
 ```
 
-Use `end: null` for an ongoing shutdown.
+Use `end: null` for an ongoing shutdown. Set `type: 'partial'` for partial shutdowns.
 
 ### Adding a new scrape source
 
