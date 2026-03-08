@@ -675,23 +675,11 @@ body.partial-shutdown .counter-number {
   text-align: center;
 }
 
-.footer-meta {
-  margin-bottom: 1rem;
-}
-
 .footer-line {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   color: var(--text-tertiary);
   margin-bottom: 0.25rem;
-}
-
-.footer-credit {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  color: var(--text-tertiary);
-  opacity: 0.5;
-  letter-spacing: 0.02em;
 }
 
 /* === Utilities === */

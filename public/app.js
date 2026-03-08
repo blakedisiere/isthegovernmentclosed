@@ -111,7 +111,7 @@ function renderSourceFootnotes(data) {
   }
 
   if (names.length > 0) {
-    sourcesLineEl.textContent = 'Sources: ' + names.map(n => escapeHtml(n)).join(', ');
+    sourcesLineEl.textContent = 'Sources: ' + names.map(n => escapeHtml(n)).join(', ') + ' \u00b7 Auto-refreshes every 15 min';
   }
 }
 
