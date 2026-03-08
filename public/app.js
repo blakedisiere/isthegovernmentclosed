@@ -235,17 +235,21 @@ function renderTimeline(data) {
   let html = '';
   let lastPresident = null;
   let cardIndex = 0;
+  let groupOpen = false;
 
   sorted.forEach((s) => {
     const president = getPresident(s.start);
 
     // Insert president marker when president changes
     if (president !== lastPresident) {
+      if (groupOpen) html += '</div>'; // close previous group
       html += `
-        <div class="timeline-president">
-          <span class="timeline-president-label">${escapeHtml(president)}</span>
-        </div>
+        <div class="timeline-group">
+          <div class="timeline-president">
+            <span class="timeline-president-label">${escapeHtml(president)}</span>
+          </div>
       `;
+      groupOpen = true;
       lastPresident = president;
     }
 
@@ -283,6 +287,7 @@ function renderTimeline(data) {
     cardIndex++;
   });
 
+  if (groupOpen) html += '</div>'; // close last group
   timelineEl.innerHTML = html;
 
   // Scroll-reveal with IntersectionObserver

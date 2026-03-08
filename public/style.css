@@ -385,13 +385,32 @@ body.partial-shutdown .counter-number {
   box-shadow: 0 0 8px rgba(30, 32, 48, 0.5);
 }
 
+/* President group — wraps a president label + their shutdown cards */
+.timeline-group {
+  position: relative;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Subtle separator line between president groups */
+.timeline-group + .timeline-group::before {
+  content: '';
+  display: block;
+  width: 40%;
+  max-width: 200px;
+  height: 1px;
+  background: var(--border);
+  margin: 0 auto 1rem;
+  opacity: 0.6;
+}
+
 /* President marker on the center line */
 .timeline-president {
   position: relative;
   z-index: 2;
   display: flex;
   justify-content: center;
-  margin: 1.25rem 0;
+  margin: 0.25rem 0 1rem;
 }
 
 .timeline-president-label {
@@ -666,6 +685,11 @@ body.partial-shutdown .counter-number {
 .timeline-president.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Last entry in each group gets extra bottom breathing room */
+.timeline-group .timeline-entry:last-child {
+  padding-bottom: 0.25rem;
 }
 
 /* === Footer === */
