@@ -15,6 +15,8 @@ frontend:
         - cp package.json .amplify-hosting/compute/default/
         - cp -r src .amplify-hosting/compute/default/
         - cp -r node_modules .amplify-hosting/compute/default/
+        - cp -r fonts .amplify-hosting/compute/default/
+        - cp -r public .amplify-hosting/compute/default/
 
         # Copy static assets (served directly by CDN)
         - cp -r public/* .amplify-hosting/static/
@@ -27,8 +29,12 @@ frontend:
             "routes": [
               {
                 "path": "/index.html",
-                "target": { "kind": "Static" },
-                "fallback": { "kind": "Compute", "src": "default" }
+                "target": { "kind": "Compute", "src": "default" },
+                "fallback": { "kind": "Static" }
+              },
+              {
+                "path": "/og-image.png",
+                "target": { "kind": "Compute", "src": "default" }
               },
               {
                 "path": "/style.css",
@@ -52,8 +58,8 @@ frontend:
               },
               {
                 "path": "/*",
-                "target": { "kind": "Static" },
-                "fallback": { "kind": "Compute", "src": "default" }
+                "target": { "kind": "Compute", "src": "default" },
+                "fallback": { "kind": "Static" }
               }
             ],
             "computeResources": [
