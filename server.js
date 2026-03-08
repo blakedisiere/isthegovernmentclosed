@@ -1,7 +1,12 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const sharp = require('sharp');
+let sharp;
+try {
+  sharp = require('sharp');
+} catch (err) {
+  console.warn('sharp not available, OG image generation disabled:', err.message);
+}
 const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 
@@ -13,11 +18,19 @@ let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
 
 // Load fonts for OG image generation (embedded as base64 in SVG)
-const fontsDir = path.join(__dirname, 'fonts');
-const fontOutfitRegular = fs.readFileSync(path.join(fontsDir, 'Outfit-Regular.ttf')).toString('base64');
-const fontOutfitBold = fs.readFileSync(path.join(fontsDir, 'Outfit-Bold.ttf')).toString('base64');
-const fontInstrumentSerif = fs.readFileSync(path.join(fontsDir, 'InstrumentSerif-Regular.ttf')).toString('base64');
-const fontSpaceMono = fs.readFileSync(path.join(fontsDir, 'SpaceMono-Regular.ttf')).toString('base64');
+let fontOutfitRegular = '';
+let fontOutfitBold = '';
+let fontInstrumentSerif = '';
+let fontSpaceMono = '';
+try {
+  const fontsDir = path.join(__dirname, 'fonts');
+  fontOutfitRegular = fs.readFileSync(path.join(fontsDir, 'Outfit-Regular.ttf')).toString('base64');
+  fontOutfitBold = fs.readFileSync(path.join(fontsDir, 'Outfit-Bold.ttf')).toString('base64');
+  fontInstrumentSerif = fs.readFileSync(path.join(fontsDir, 'InstrumentSerif-Regular.ttf')).toString('base64');
+  fontSpaceMono = fs.readFileSync(path.join(fontsDir, 'SpaceMono-Regular.ttf')).toString('base64');
+} catch (err) {
+  console.warn('Could not load OG image fonts:', err.message);
+}
 
 // OG image cache
 let ogCache = { buffer: null, cacheKey: null, timestamp: 0 };
@@ -86,6 +99,9 @@ try {
 
 // OG image route — must be before express.static
 app.get('/og-image.png', async (req, res) => {
+  if (!sharp) {
+    return res.status(503).send('Image generation not available');
+  }
   try {
     const status = getShutdownStatus();
     const days = status.since ? daysBetween(status.since, null) : 0;
