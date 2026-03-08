@@ -31,14 +31,29 @@ app.get('/api/status', async (req, res) => {
 
   if (scrapeCache.data) {
     const closedSignals = scrapeCache.data.filter((r) => r.closed === true);
+    const errorSignals = scrapeCache.data.filter((r) => r.error);
     if (closedSignals.length > 0) {
-      liveSignal = { closed: true, sources: closedSignals.map((s) => s.source) };
+      liveSignal = {
+        closed: true,
+        sources: closedSignals.map((s) => ({
+          name: s.source,
+          detail: s.detail || null,
+        })),
+      };
+    }
+    if (errorSignals.length > 0) {
+      liveSignal = liveSignal || { closed: false, sources: [] };
+      liveSignal.errors = errorSignals.map((s) => ({
+        name: s.name,
+        error: s.error,
+      }));
     }
   }
 
   res.json({
     ...status,
     liveCheck: liveSignal,
+    sourceCount: scrapeCache.data ? scrapeCache.data.length : 0,
     lastScraped: scrapeCache.timestamp
       ? new Date(scrapeCache.timestamp).toISOString()
       : null,

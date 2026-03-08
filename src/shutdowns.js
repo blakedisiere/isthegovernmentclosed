@@ -25,6 +25,8 @@ const SHUTDOWNS = [
   { start: '2018-01-20', end: '2018-01-22' },
   { start: '2018-02-09', end: '2018-02-09' },
   { start: '2018-12-22', end: '2019-01-25' },
+  { start: '2025-10-01', end: '2025-11-12' }, // 43-day shutdown, longest in modern history
+  { start: '2026-02-14', end: null },          // Partial shutdown (DHS funding lapse)
 ];
 
 function getShutdownStatus() {
