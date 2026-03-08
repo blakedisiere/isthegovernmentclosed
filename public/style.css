@@ -21,8 +21,8 @@
 
   /* Text */
   --text-primary: #e2dfd7;
-  --text-secondary: #9b978e;
-  --text-tertiary: #5e5b54;
+  --text-secondary: #b0ada5;
+  --text-tertiary: #8a8780;
 
   /* Accents */
   --red: #ef4444;
@@ -812,4 +812,72 @@ body.partial-shutdown .counter-number {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
+}
+
+/* === Skip Link === */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--text-primary);
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  z-index: 10000;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* === Screen Reader Only === */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* === Focus Visible === */
+.timeline-card:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.timeline-entry.ongoing .timeline-card:focus-visible {
+  outline-color: var(--red);
+}
+
+.timeline-entry.partial.ongoing .timeline-card:focus-visible {
+  outline-color: var(--amber);
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hero-eyebrow,
+  .hero-question,
+  .hero-answer-wrap,
+  .hero-detail,
+  .counter-section,
+  .timeline-entry,
+  .timeline-president {
+    opacity: 1;
+    transform: none;
+  }
 }

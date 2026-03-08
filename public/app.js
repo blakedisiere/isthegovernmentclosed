@@ -1,3 +1,21 @@
+// Screen reader announcement utility
+function announceToScreenReader(message) {
+  const el = document.getElementById('sr-announcer') || createAnnouncer();
+  el.textContent = '';
+  // Brief delay so screen readers register the change
+  setTimeout(() => { el.textContent = message; }, 100);
+}
+
+function createAnnouncer() {
+  const el = document.createElement('div');
+  el.id = 'sr-announcer';
+  el.setAttribute('aria-live', 'assertive');
+  el.setAttribute('aria-atomic', 'true');
+  el.className = 'sr-only';
+  document.body.appendChild(el);
+  return el;
+}
+
 // DOM refs
 const answerEl = document.getElementById('answer');
 const detailEl = document.getElementById('detail');
@@ -42,8 +60,10 @@ function renderStatus(data) {
 
     if (data.daysClosed) {
       counterNumber.textContent = data.daysClosed;
+      counterSection.setAttribute('aria-label', 'Government partially closed for ' + data.daysClosed + ' days');
       counterSection.classList.remove('hidden');
     }
+    announceToScreenReader('The government is partially closed.');
   } else if (data.isClosed) {
     answerEl.textContent = 'Yes';
     answerEl.className = 'answer yes fade-in';
@@ -54,8 +74,10 @@ function renderStatus(data) {
 
     if (data.daysClosed) {
       counterNumber.textContent = data.daysClosed;
+      counterSection.setAttribute('aria-label', 'Government closed for ' + data.daysClosed + ' days');
       counterSection.classList.remove('hidden');
     }
+    announceToScreenReader('Yes, the government is closed.');
   } else {
     answerEl.textContent = 'No';
     answerEl.className = 'answer no fade-in';
@@ -64,6 +86,7 @@ function renderStatus(data) {
     statusLabel.textContent = 'OPERATING';
     document.body.className = '';
     counterSection.classList.add('hidden');
+    announceToScreenReader('No, the government is open.');
   }
 
   detailEl.textContent = data.message;
@@ -153,7 +176,7 @@ function renderTimeline(data) {
       <div class="${entryClasses}">
         <div class="timeline-dot"></div>
         <div class="timeline-connector"></div>
-        <div class="timeline-card" onclick="this.classList.toggle('expanded')">
+        <div class="timeline-card" tabindex="0" role="button" aria-expanded="false" onclick="toggleCard(this)" onkeydown="handleCardKeydown(event, this)">
           <div class="timeline-card-header">
             <span class="timeline-year">${escapeHtml(year)}</span>
             <span class="timeline-days">${escapeHtml(daysLabel)}${typeTag}</span>
@@ -196,6 +219,20 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Toggle timeline card expansion
+function toggleCard(card) {
+  const isExpanded = card.classList.toggle('expanded');
+  card.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+}
+
+// Handle keyboard interaction on timeline cards
+function handleCardKeydown(event, card) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    toggleCard(card);
+  }
+}
+
 // Show error state
 function showError() {
   answerEl.textContent = '?';
@@ -204,6 +241,7 @@ function showError() {
   statusIndicator.className = 'status-indicator';
   statusLabel.textContent = 'UNAVAILABLE';
   detailEl.textContent = 'Unable to reach the server. Please try again later.';
+  announceToScreenReader('Error: Unable to reach the server. Please try again later.');
 }
 
 // Fetch status from API

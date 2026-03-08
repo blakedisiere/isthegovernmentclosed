@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Skip link for keyboard users -->
+  <a href="#answer" class="skip-link">Skip to main content</a>
+
   <!-- Grain overlay -->
   <div class="grain" aria-hidden="true"></div>
 
@@ -19,24 +22,24 @@
     <!-- Hero -->
     <header class="hero">
       <div class="hero-eyebrow">
-        <span class="eyebrow-icon">
+        <span class="eyebrow-icon" aria-hidden="true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 10h.01"/><path d="M15 10h.01"/></svg>
         </span>
         <span>United States Federal Government</span>
       </div>
       <h1 class="hero-question">Is the government closed?</h1>
       <div class="hero-answer-wrap">
-        <div id="status-indicator" class="status-indicator">
-          <span id="status-dot" class="status-dot"></span>
+        <div id="status-indicator" class="status-indicator" role="status">
+          <span id="status-dot" class="status-dot" aria-hidden="true"></span>
           <span id="status-label" class="status-label">CHECKING</span>
         </div>
-        <div id="answer" class="answer loading">...</div>
+        <div id="answer" class="answer loading" aria-live="polite" aria-atomic="true">...</div>
       </div>
-      <p id="detail" class="hero-detail"></p>
+      <p id="detail" class="hero-detail" aria-live="polite"></p>
     </header>
 
     <!-- Day Counter (visible during shutdowns) -->
-    <section id="counter-section" class="counter-section hidden">
+    <section id="counter-section" class="counter-section hidden" aria-label="Shutdown duration">
       <div class="counter-inner">
         <span id="counter-number" class="counter-number">0</span>
         <span class="counter-unit">days</span>
@@ -57,9 +60,9 @@
       </div>
     </section>
   </div>
-  <div class="timeline-section" style="padding: 0 1.5rem 3rem;">
+  <section class="timeline-section" style="padding: 0 1.5rem 3rem;" aria-label="Shutdown timeline details">
     <div id="timeline" class="timeline" style="max-width: 900px; margin: 0 auto;"></div>
-  </div>
+  </section>
   <div class="page">
 
     <!-- Footer -->
