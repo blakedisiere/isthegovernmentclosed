@@ -6,8 +6,70 @@ frontend:
         - npm install
     build:
       commands:
-        - echo "No build step"
+        # Create the .amplify-hosting structure for Web Compute (SSR)
+        - mkdir -p .amplify-hosting/compute/default
+        - mkdir -p .amplify-hosting/static
+
+        # Copy server files into compute bundle
+        - cp server.js .amplify-hosting/compute/default/
+        - cp package.json .amplify-hosting/compute/default/
+        - cp -r src .amplify-hosting/compute/default/
+        - cp -r node_modules .amplify-hosting/compute/default/
+
+        # Copy static assets (served directly by CDN)
+        - cp -r public/* .amplify-hosting/static/
+
+        # Create deploy manifest
+        - |
+          cat > .amplify-hosting/deploy-manifest.json << 'MANIFEST'
+          {
+            "version": 1,
+            "routes": [
+              {
+                "path": "/index.html",
+                "target": { "kind": "Static" },
+                "fallback": { "kind": "Compute", "src": "default" }
+              },
+              {
+                "path": "/style.css",
+                "target": { "kind": "Static" }
+              },
+              {
+                "path": "/app.js",
+                "target": { "kind": "Static" }
+              },
+              {
+                "path": "/preview-desktop.png",
+                "target": { "kind": "Static" }
+              },
+              {
+                "path": "/preview-mobile.png",
+                "target": { "kind": "Static" }
+              },
+              {
+                "path": "/api/*",
+                "target": { "kind": "Compute", "src": "default" }
+              },
+              {
+                "path": "/*",
+                "target": { "kind": "Static" },
+                "fallback": { "kind": "Compute", "src": "default" }
+              }
+            ],
+            "computeResources": [
+              {
+                "name": "default",
+                "entrypoint": "server.js",
+                "runtime": "nodejs18.x"
+              }
+            ],
+            "framework": {
+              "name": "express",
+              "version": "4.x"
+            }
+          }
+          MANIFEST
   artifacts:
-    baseDirectory: .
+    baseDirectory: .amplify-hosting
     files:
       - '**/*'
