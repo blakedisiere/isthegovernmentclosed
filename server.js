@@ -9,19 +9,8 @@ const { scrapeAll } = require('./src/scraper');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      upgradeInsecureRequests: null,
-    },
-  },
-}));
+// Security headers (CSP disabled — too restrictive for deployment)
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // Rate limiting on API routes
 app.use('/api/', rateLimit({
