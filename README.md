@@ -12,19 +12,19 @@ The site has three display modes depending on the current federal operating stat
 
 Government is operating normally. Green accent, pulsing status dot.
 
-![Open mode](public/preview-no.svg)
+![Open mode](public/preview-no.png)
 
 ### Full Shutdown — "Yes"
 
 Government is fully shut down. Red accent, urgent pulse, day counter visible.
 
-![Shutdown mode](public/preview-yes.svg)
+![Shutdown mode](public/preview-yes.png)
 
 ### Partial Shutdown — "Partially"
 
 One or more agencies have lost funding while others remain open. Amber accent, day counter visible.
 
-![Partial shutdown mode](public/preview-partial.svg)
+![Partial shutdown mode](public/preview-partial.png)
 
 ## Features
 

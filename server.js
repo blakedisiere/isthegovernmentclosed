@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const helmet = require('helmet');
 let sharp;
 try {
   sharp = require('sharp');
@@ -12,6 +13,10 @@ const { scrapeAll } = require('./src/scraper');
 
 const app = express();
 app.set('trust proxy', true);
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 const PORT = process.env.PORT || 3000;
 
 // Cache scrape results for 15 minutes
@@ -41,15 +46,6 @@ try {
 function formatDateForOg(dateStr) {
   const date = new Date(dateStr + 'T00:00:00');
   return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-}
-
-function createTextSvg(text, fontSize, color, fontFamily, fontWeight, width) {
-  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${Math.round(fontSize * 1.5)}">
-    <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle"
-      font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight || 'normal'}"
-      fill="${color}">${escaped}</text>
-  </svg>`);
 }
 
 async function buildOgImage(status) {
@@ -172,6 +168,21 @@ try {
   console.warn('Could not read index.html for SSR, falling back to static serving:', err.message);
 }
 
+// Sitemap route
+app.get('/sitemap.xml', (req, res) => {
+  const today = new Date().toISOString().split('T')[0];
+  res.set('Content-Type', 'application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://isthegovernmentclosed.com/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`);
+});
+
 // OG image route — must be before express.static
 app.get('/og-image.png', async (req, res) => {
   if (!sharp) {
@@ -266,7 +277,7 @@ if (indexHtml) {
 }
 
 // Static files — index.html still served normally as fallback
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1d' }));
 
 // Helper: days between two dates (or today if end is null)
 function daysBetween(startStr, endStr) {

@@ -77,6 +77,15 @@ npm run dev          # Start dev server with --watch auto-reload
 - No build step required — edit files and restart the server
 - Prefer vanilla JS on the frontend; no frameworks needed for this scope
 
+## Gotchas
+
+- **OG image fonts:** Do NOT use SVG `@font-face` with sharp — librsvg ignores embedded fonts on Lambda. Use sharp's Pango text input with `fontfile` parameter instead
+- **Amplify routing:** Routes must be Compute-first (not Static-first) for SSR to work. If Static is primary, Amplify's CDN serves `index.html` directly and Express never sees the request
+- **Protocol behind CloudFront:** `req.protocol` returns `http` behind the CDN. Use `req.get('x-forwarded-proto')` with `app.set('trust proxy', true)` for correct `https` URLs
+- **OG image URLs must be absolute:** Relative paths don't work for link preview crawlers (Slack, iMessage, Discord). SSR replaces the production domain with the request host so previews work on dev/staging domains too
+- **Shutdown description day counts:** Don't hardcode day counts in `description` text — the frontend computes days from the date range automatically. Hardcoded counts will conflict with the computed value
+- **Slack caches link unfurls:** After changing OG tags, previously shared links keep the old preview. Test in a new channel or wait for cache expiry
+
 ## Development Workflow
 
 ### Branches
