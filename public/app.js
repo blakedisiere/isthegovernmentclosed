@@ -36,6 +36,16 @@ const statsChart = document.getElementById('stats-chart');
 const timelineEl = document.getElementById('timeline');
 const shutdownCountEl = document.getElementById('shutdown-count');
 const totalDaysEl = document.getElementById('total-days-closed');
+const impactSection = document.getElementById('impact-section');
+const impactToggle = document.getElementById('impact-toggle');
+const impactContent = document.getElementById('impact-content');
+const impactFurloughed = document.getElementById('impact-furloughed');
+const impactCost = document.getElementById('impact-cost');
+const impactAgencies = document.getElementById('impact-agencies');
+const impactServices = document.getElementById('impact-services');
+const impactServicesList = document.getElementById('impact-services-list');
+const newsSection = document.getElementById('news-section');
+const newsFeed = document.getElementById('news-feed');
 
 // Format date for display
 function formatDate(dateStr) {
@@ -148,6 +158,7 @@ function renderStatus(data) {
   currentShareText = `The US government is currently ${statusWord}. isthegovernmentclosed.com`;
   shareBtn.classList.remove('hidden');
 
+  renderImpact(data);
   renderSourceFootnotes(data);
 
   if (data.lastScraped) {
@@ -326,6 +337,75 @@ function handleCardKeydown(event, card) {
   }
 }
 
+// Render impact dashboard
+function renderImpact(data) {
+  if (!data.impact) {
+    impactSection.classList.add('hidden');
+    return;
+  }
+
+  const impact = data.impact;
+  impactSection.classList.remove('hidden');
+
+  if (impact.furloughedEstimate) {
+    impactFurloughed.textContent = impact.furloughedEstimate.toLocaleString();
+  }
+  if (impact.dailyCostEstimate) {
+    impactCost.textContent = '$' + (impact.dailyCostEstimate / 1000000).toFixed(0) + 'M';
+  }
+  if (impact.agencies) {
+    impactAgencies.textContent = impact.agencies;
+  }
+
+  if (impact.affectedServices && impact.affectedServices.length > 0) {
+    impactServices.classList.remove('hidden');
+    impactServicesList.innerHTML = impact.affectedServices
+      .map((s) => `<li>${escapeHtml(s)}</li>`)
+      .join('');
+  } else {
+    impactServices.classList.add('hidden');
+  }
+
+  announceToScreenReader('Shutdown impact dashboard is available.');
+}
+
+// Render news feed
+function renderNews(articles) {
+  if (!articles || articles.length === 0) {
+    newsSection.classList.add('hidden');
+    return;
+  }
+
+  newsSection.classList.remove('hidden');
+  newsFeed.innerHTML = articles
+    .map((a) => {
+      const date = a.pubDate
+        ? new Date(a.pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : '';
+      const sourceLabel = a.source ? escapeHtml(a.source) : '';
+      const meta = [sourceLabel, date].filter(Boolean).join(' \u00b7 ');
+      return `
+        <a class="news-card" href="${escapeHtml(a.link)}" target="_blank" rel="noopener noreferrer">
+          <div class="news-card-title">${escapeHtml(a.title)}</div>
+          <div class="news-card-meta">${meta}</div>
+        </a>
+      `;
+    })
+    .join('');
+}
+
+// Fetch news from API
+async function fetchNewsFeed() {
+  try {
+    const res = await fetch('/api/news');
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    renderNews(data.articles);
+  } catch (err) {
+    newsSection.classList.add('hidden');
+  }
+}
+
 // Show error state
 function showError() {
   clearShimmer();
@@ -393,6 +473,119 @@ shareBtn.addEventListener('click', async () => {
 });
 
 // Initialize — fetch both endpoints in parallel
+// Push notification support
+const notifyBtn = document.getElementById('notify-btn');
+const notifyLabel = document.getElementById('notify-label');
+let swRegistration = null;
+let isSubscribed = false;
+
+async function initPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  try {
+    swRegistration = await navigator.serviceWorker.register('/sw.js');
+    const subscription = await swRegistration.pushManager.getSubscription();
+    isSubscribed = subscription !== null;
+    updateNotifyButton();
+    notifyBtn.classList.remove('hidden');
+  } catch (err) {
+    console.error('Service worker registration failed:', err);
+  }
+}
+
+function updateNotifyButton() {
+  if (isSubscribed) {
+    notifyLabel.textContent = 'Subscribed';
+    notifyBtn.classList.add('subscribed');
+    notifyBtn.setAttribute('aria-label', 'Disable shutdown notifications');
+  } else {
+    notifyLabel.textContent = 'Notify Me';
+    notifyBtn.classList.remove('subscribed');
+    notifyBtn.setAttribute('aria-label', 'Enable shutdown notifications');
+  }
+}
+
+async function subscribeUser() {
+  try {
+    const res = await fetch('/api/push/vapid-public-key');
+    const { key } = await res.json();
+    if (!key) {
+      notifyLabel.textContent = 'Unavailable';
+      return;
+    }
+
+    const subscription = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(key),
+    });
+
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription),
+    });
+
+    isSubscribed = true;
+    updateNotifyButton();
+  } catch (err) {
+    console.error('Subscribe failed:', err);
+    notifyLabel.textContent = 'Failed';
+    setTimeout(() => updateNotifyButton(), 2000);
+  }
+}
+
+async function unsubscribeUser() {
+  try {
+    const subscription = await swRegistration.pushManager.getSubscription();
+    if (subscription) {
+      await subscription.unsubscribe();
+      await fetch('/api/push/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+      });
+    }
+    isSubscribed = false;
+    updateNotifyButton();
+  } catch (err) {
+    console.error('Unsubscribe failed:', err);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+notifyBtn.addEventListener('click', () => {
+  if (isSubscribed) {
+    unsubscribeUser();
+  } else {
+    subscribeUser();
+  }
+});
+
+initPushNotifications();
+
+// Impact toggle handler
+impactToggle.addEventListener('click', () => {
+  const expanded = impactToggle.getAttribute('aria-expanded') === 'true';
+  impactToggle.setAttribute('aria-expanded', !expanded);
+});
+
+impactToggle.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    impactToggle.click();
+  }
+});
+
 // Initialize — use SSR data if available, then fetch fresh data
 if (window.__STATUS__) {
   renderStatus(window.__STATUS__);
@@ -401,5 +594,9 @@ if (window.__STATUS__) {
   Promise.all([fetchStatus(), fetchTimeline()]);
 }
 
-// Refresh status every 15 minutes
+// Fetch news on load
+fetchNewsFeed();
+
+// Refresh status and news periodically
 setInterval(fetchStatus, 15 * 60 * 1000);
+setInterval(fetchNewsFeed, 15 * 60 * 1000);

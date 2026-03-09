@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Is the Government Closed? — Option B: Clean Minimal</title>
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Screen reader only ── */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ── Skip nav ── */
+  .skip-nav {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 1000;
+    padding: 0.75rem 1.25rem;
+    background: #fff;
+    color: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    text-decoration: none;
+    border-radius: 0 0 4px 4px;
+  }
+  .skip-nav:focus {
+    top: 0;
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  /* ── Body ── */
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #ffffff;
+    background-color: #000000;
+    transition: background-color 0.6s ease;
+    min-height: 100vh;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body { transition: none; }
+  }
+
+  body.state-yes { background-color: #1a0000; }
+  body.state-partially { background-color: #1a1400; }
+
+  /* ── Focus indicators ── */
+  :focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    padding: 3rem 0 1rem;
+    text-align: center;
+  }
+  .site-header h1 {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #999999;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 4rem 0 3rem;
+    text-align: center;
+  }
+  .hero-question {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 400;
+    color: #999999;
+    margin-bottom: 2rem;
+  }
+  .hero-answer {
+    font-size: clamp(5rem, 15vw, 9rem);
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+    transition: color 0.4s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-answer { transition: none; }
+  }
+
+  .hero-answer.answer-no { color: #33cc66; }
+  .hero-answer.answer-yes { color: #ff3333; }
+  .hero-answer.answer-partially { color: #ffaa00; }
+
+  /* ── Status ── */
+  .status-text {
+    text-align: center;
+    padding: 1rem 0 4rem;
+    font-size: 0.875rem;
+    color: #888888;
+  }
+
+  /* ── Section spacing ── */
+  .section {
+    padding: 3rem 0;
+  }
+  .section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2rem;
+  }
+
+  /* ── Timeline (flat single-column) ── */
+  .timeline-entry {
+    background: #0a0a0a;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+  }
+  .timeline-entry-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+  }
+  .timeline-entry-date {
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    font-size: 0.875rem;
+    color: #888888;
+    margin-bottom: 0.75rem;
+  }
+  .timeline-entry-body {
+    font-size: 0.875rem;
+    color: #aaaaaa;
+    line-height: 1.7;
+  }
+  .timeline-entry-duration {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    font-size: 0.875rem;
+    color: #666666;
+  }
+
+  /* ── Chart ── */
+  .chart-list {
+    list-style: none;
+  }
+  .chart-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .chart-label {
+    flex: 0 0 120px;
+    text-align: right;
+    font-size: 0.875rem;
+    color: #cccccc;
+    white-space: nowrap;
+  }
+  .chart-bar-track {
+    flex: 1;
+    height: 24px;
+    background: #0a0a0a;
+    border-radius: 2px;
+    position: relative;
+  }
+  .chart-bar-fill {
+    height: 100%;
+    background: #ffffff;
+    border-radius: 2px;
+    min-width: 2px;
+    transition: width 0.4s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chart-bar-fill { transition: none; }
+  }
+
+  .chart-value {
+    flex: 0 0 48px;
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    font-size: 0.875rem;
+    color: #888888;
+  }
+
+  /* ── Footer ── */
+  .site-footer {
+    padding: 4rem 0 3rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: #444444;
+  }
+  .site-footer a {
+    color: #666666;
+    text-decoration: none;
+  }
+  .site-footer a:hover,
+  .site-footer a:focus-visible {
+    color: #ffffff;
+    text-decoration: underline;
+  }
+
+  /* ── Toggle button ── */
+  .toggle-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 44px;
+    height: 44px;
+    background: #1a1a1a;
+    color: #888888;
+    border: none;
+    border-radius: 4px;
+    font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: background-color 0.2s ease;
+  }
+  .toggle-btn:hover { background: #2a2a2a; color: #cccccc; }
+  .toggle-btn:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-btn { transition: none; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .chart-label { flex: 0 0 80px; font-size: 0.75rem; }
+    .chart-value { flex: 0 0 40px; font-size: 0.75rem; }
+    .timeline-entry { padding: 1.25rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-nav">Skip to main content</a>
+
+<header class="site-header">
+  <div class="container">
+    <h1>isthegovernmentclosed.com</h1>
+  </div>
+</header>
+
+<main id="main-content">
+
+  <!-- Hero -->
+  <section class="hero" aria-labelledby="hero-question">
+    <div class="container">
+      <p class="hero-question" id="hero-question">Is the government closed?</p>
+      <div class="hero-answer answer-no" id="hero-answer" aria-live="polite" aria-atomic="true" role="status">No</div>
+    </div>
+  </section>
+
+  <!-- Status -->
+  <div class="status-text" aria-live="polite">
+    <div class="container">
+      <p id="status-message">The federal government is currently open and operating normally.</p>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <section class="section" aria-labelledby="timeline-heading">
+    <div class="container">
+      <h2 class="section-title" id="timeline-heading">Most Recent Shutdown</h2>
+
+      <div class="timeline-entry">
+        <h3 class="timeline-entry-title">FY2024 Funding Gap</h3>
+        <p class="timeline-entry-date">2025-01-19 &mdash; 2025-02-14</p>
+        <p class="timeline-entry-body">
+          Partial government shutdown affecting multiple federal agencies.
+          Approximately 875,000 federal employees were furloughed during the funding lapse.
+        </p>
+        <span class="timeline-entry-duration">26 days</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chart -->
+  <section class="section" aria-labelledby="chart-heading">
+    <div class="container">
+      <h2 class="section-title" id="chart-heading">Days Closed by President</h2>
+
+      <ul class="chart-list" role="list" aria-label="Horizontal bar chart of government shutdown days by president">
+        <li class="chart-row">
+          <span class="chart-label">Carter</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar-fill" style="width: 100%" aria-hidden="true"></div>
+          </div>
+          <span class="chart-value" aria-label="69 days">69d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Reagan</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar-fill" style="width: 20.3%" aria-hidden="true"></div>
+          </div>
+          <span class="chart-value" aria-label="14 days">14d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">G.H.W. Bush</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar-fill" style="width: 5.8%" aria-hidden="true"></div>
+          </div>
+          <span class="chart-value" aria-label="4 days">4d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Clinton</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar-fill" style="width: 37.7%" aria-hidden="true"></div>
+          </div>
+          <span class="chart-value" aria-label="26 days">26d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Obama</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar-fill" style="width: 23.2%" aria-hidden="true"></div>
+          </div>
+          <span class="chart-value" aria-label="16 days">16d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Trump</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar-fill" style="width: 100%" aria-hidden="true"></div>
+          </div>
+          <span class="chart-value" aria-label="69 days">69d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Biden</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar-fill" style="width: 0%" aria-hidden="true"></div>
+          </div>
+          <span class="chart-value" aria-label="0 days">0d</span>
+        </li>
+      </ul>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>Data sourced from public records. <a href="#">About</a></p>
+  </div>
+</footer>
+
+<!-- Toggle button -->
+<button
+  type="button"
+  class="toggle-btn"
+  id="toggle-btn"
+  aria-label="Toggle state"
+  title="Toggle state (T)"
+>T</button>
+
+<script>
+(function () {
+  var states = [
+    { name: 'no',        answer: 'No',        answerClass: 'answer-no',        bodyClass: '',                 message: 'The federal government is currently open and operating normally.' },
+    { name: 'yes',       answer: 'Yes',        answerClass: 'answer-yes',       bodyClass: 'state-yes',        message: 'The federal government is currently shut down.' },
+    { name: 'partially', answer: 'Partially',  answerClass: 'answer-partially', bodyClass: 'state-partially',  message: 'The federal government is partially shut down.' }
+  ];
+
+  var current = 0;
+  var answerEl = document.getElementById('hero-answer');
+  var messageEl = document.getElementById('status-message');
+  var body = document.body;
+  var btn = document.getElementById('toggle-btn');
+
+  function applyState(index) {
+    var s = states[index];
+    // Clear previous classes
+    answerEl.className = 'hero-answer ' + s.answerClass;
+    body.classList.remove('state-yes', 'state-partially');
+    if (s.bodyClass) body.classList.add(s.bodyClass);
+    answerEl.textContent = s.answer;
+    messageEl.textContent = s.message;
+  }
+
+  function cycle() {
+    current = (current + 1) % states.length;
+    applyState(current);
+  }
+
+  btn.addEventListener('click', cycle);
+
+  document.addEventListener('keydown', function (e) {
+    // Only fire if not typing in an input/textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 't' || e.key === 'T') {
+      cycle();
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

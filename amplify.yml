@@ -45,6 +45,10 @@ frontend:
                 "target": { "kind": "Static" }
               },
               {
+                "path": "/sw.js",
+                "target": { "kind": "Static" }
+              },
+              {
                 "path": "/preview-desktop.png",
                 "target": { "kind": "Static" }
               },

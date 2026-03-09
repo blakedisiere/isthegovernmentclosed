@@ -695,6 +695,178 @@ body.partial-shutdown .counter-number {
   padding-bottom: 0.25rem;
 }
 
+/* === Impact Dashboard === */
+.impact-section {
+  padding: 0 0 1rem;
+  opacity: 0;
+  animation: reveal-up 0.6s ease-out 0.7s forwards;
+}
+
+.impact-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.impact-toggle:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--text-tertiary);
+}
+
+.impact-toggle:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.impact-toggle-chevron {
+  font-size: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.impact-toggle[aria-expanded="true"] .impact-toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.impact-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+}
+
+.impact-toggle[aria-expanded="true"] + .impact-content {
+  max-height: 500px;
+  padding-top: 1rem;
+}
+
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.impact-metric {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+}
+
+.impact-metric-value {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.impact-metric-label {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.impact-services {
+  margin-top: 1rem;
+}
+
+.impact-services-title {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 0.5rem;
+}
+
+.impact-services-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.impact-services-list li {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 0.25rem 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .impact-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* === News Feed === */
+.news-section {
+  padding: 1rem 0 2rem;
+}
+
+.news-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.news-card {
+  display: block;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.news-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--text-tertiary);
+}
+
+.news-card:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.news-card-title {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 0.375rem;
+}
+
+.news-card-meta {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
 /* === Footer === */
 .footer {
   padding: 2.5rem 0 2rem;
@@ -828,6 +1000,46 @@ body.partial-shutdown .counter-number {
   flex-shrink: 0;
 }
 
+/* === Hero Actions === */
+.hero-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* === Notify Button === */
+.notify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.notify-btn:hover {
+  border-color: var(--text-tertiary);
+  color: var(--text-secondary);
+}
+
+.notify-btn:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.notify-btn.subscribed {
+  border-color: var(--green-dim);
+  color: var(--green);
+}
+
 /* === Share Button === */
 .share-btn {
   display: inline-flex;
@@ -842,7 +1054,6 @@ body.partial-shutdown .counter-number {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.4rem 1rem;
-  margin-top: 1rem;
   cursor: pointer;
   transition: border-color 0.2s ease, color 0.2s ease;
 }
