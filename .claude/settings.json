@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "bash -c 'if echo \"$TOOL_INPUT\" | grep -q \"amplify.yml\"; then echo \"WARNING: Editing amplify.yml — this controls Amplify deployment routing. Incorrect changes can take down the site.\" >&2; fi'"
+      }
+    ]
+  }
+}
