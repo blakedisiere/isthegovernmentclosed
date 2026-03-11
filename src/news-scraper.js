@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 const RSS_SOURCES = [
   {
     name: 'Google News',
-    url: 'https://news.google.com/rss/search?q=government+shutdown+OR+funding+lapse+OR+appropriations&hl=en-US&gl=US&ceid=US:en',
+    url: 'https://news.google.com/rss/search?q=%22government+shutdown%22+OR+%22federal+shutdown%22+OR+%22funding+lapse%22+OR+%22continuing+resolution%22&hl=en-US&gl=US&ceid=US:en',
   },
   {
     name: 'Congress.gov',
@@ -12,18 +12,88 @@ const RSS_SOURCES = [
   },
 ];
 
-const KEYWORDS = [
+// Strong keywords — match anywhere in title + description
+const STRONG_KEYWORDS = [
   'shutdown',
   'government closed',
-  'appropriations',
-  'continuing resolution',
-  'furlough',
+  'government closure',
   'funding lapse',
+  'furlough',
+  'continuing resolution',
+  'appropriations bill',
+  'spending bill',
+  'stopgap funding',
+  'cr expir',
 ];
 
-function matchesKeywords(text) {
-  const lower = text.toLowerCase();
-  return KEYWORDS.some((kw) => lower.includes(kw));
+// Weaker keywords — only match if found in the title
+const TITLE_KEYWORDS = [
+  'appropriations',
+  'federal funding',
+  'federal budget',
+];
+
+// Reject articles matching these patterns even if keywords match
+const EXCLUDE_PATTERNS = [
+  'state government',
+  'state shutdown',
+  'state budget',
+  'uk government',
+  'british government',
+  'parliament shutdown',
+  'canadian government',
+];
+
+// Only show articles from these outlets (matched case-insensitively)
+const TRUSTED_SOURCES = new Set([
+  'associated press',
+  'ap news',
+  'reuters',
+  'cnn',
+  'nbc news',
+  'abc news',
+  'cbs news',
+  'npr',
+  'pbs',
+  'pbs newshour',
+  'washington post',
+  'the washington post',
+  'new york times',
+  'the new york times',
+  'politico',
+  'the hill',
+  'usa today',
+  'axios',
+  'bloomberg',
+  'wall street journal',
+  'the wall street journal',
+  'fox news',
+  'bbc',
+  'bbc news',
+  'cnbc',
+  'c-span',
+  'the guardian',
+  'los angeles times',
+  'congress.gov',
+]);
+
+function matchesKeywords(title, description) {
+  const fullText = (title + ' ' + (description || '')).toLowerCase();
+  const titleLower = title.toLowerCase();
+
+  if (STRONG_KEYWORDS.some((kw) => fullText.includes(kw))) return true;
+  if (TITLE_KEYWORDS.some((kw) => titleLower.includes(kw))) return true;
+  return false;
+}
+
+function isExcluded(title, description) {
+  const fullText = (title + ' ' + (description || '')).toLowerCase();
+  return EXCLUDE_PATTERNS.some((pat) => fullText.includes(pat));
+}
+
+function isTrustedSource(sourceName) {
+  if (!sourceName) return false;
+  return TRUSTED_SOURCES.has(sourceName.toLowerCase());
 }
 
 function parseRssItems(xml) {
@@ -35,8 +105,9 @@ function parseRssItems(xml) {
     const link = $(el).find('link').text().trim();
     const pubDate = $(el).find('pubDate').text().trim();
     const description = $(el).find('description').text().trim();
+    const sourceName = $(el).find('source').text().trim();
 
-    items.push({ title, link, pubDate, description });
+    items.push({ title, link, pubDate, description, sourceName });
   });
 
   return items;
@@ -56,17 +127,20 @@ async function fetchNews() {
 
       const items = parseRssItems(response.data);
 
-      // Filter by keywords for non-Congress.gov sources
-      const filtered = source.name === 'Congress.gov'
-        ? items.filter((item) => matchesKeywords(item.title + ' ' + item.description))
-        : items;
+      const filtered = items.filter((item) => {
+        if (!matchesKeywords(item.title, item.description)) return false;
+        if (isExcluded(item.title, item.description)) return false;
+        // For Google News, only allow trusted sources
+        if (source.name === 'Google News' && !isTrustedSource(item.sourceName)) return false;
+        return true;
+      });
 
       filtered.forEach((item) => {
         allArticles.push({
           title: item.title,
           link: item.link,
           pubDate: item.pubDate || null,
-          source: source.name,
+          source: item.sourceName || source.name,
           description: item.description
             ? cheerio.load(item.description).text().slice(0, 200)
             : null,
