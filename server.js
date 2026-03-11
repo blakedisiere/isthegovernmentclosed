@@ -10,6 +10,8 @@ try {
 }
 const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
+const { fetchNews } = require('./src/news-scraper');
+const { addSubscription, removeSubscription, sendNotificationToAll, VAPID_PUBLIC_KEY } = require('./src/push');
 
 const app = express();
 app.set('trust proxy', true);
@@ -17,11 +19,19 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
+app.use(express.json());
 const PORT = process.env.PORT || 3000;
+
+// Track last known shutdown state for push notifications
+let lastKnownState = null;
 
 // Cache scrape results for 15 minutes
 let scrapeCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 15 * 60 * 1000;
+
+// News cache (30 minutes)
+let newsCache = { data: null, timestamp: 0 };
+const NEWS_CACHE_TTL = 30 * 60 * 1000;
 
 // OG image cache
 let ogCache = { buffer: null, cacheKey: null, timestamp: 0 };
@@ -301,6 +311,45 @@ app.get('/api/shutdowns', (req, res) => {
   res.json({ shutdowns, count: shutdowns.length, totalDays, maxDays });
 });
 
+// Push notification routes
+app.get('/api/push/vapid-public-key', (req, res) => {
+  res.json({ key: VAPID_PUBLIC_KEY || null });
+});
+
+app.post('/api/push/subscribe', (req, res) => {
+  const subscription = req.body;
+  if (!subscription || !subscription.endpoint) {
+    return res.status(400).json({ error: 'Invalid subscription' });
+  }
+  addSubscription(subscription);
+  res.json({ success: true });
+});
+
+app.post('/api/push/unsubscribe', (req, res) => {
+  const { endpoint } = req.body;
+  if (!endpoint) {
+    return res.status(400).json({ error: 'Missing endpoint' });
+  }
+  removeSubscription(endpoint);
+  res.json({ success: true });
+});
+
+// API endpoint: news feed
+app.get('/api/news', async (req, res) => {
+  const now = Date.now();
+  if (newsCache.data && now - newsCache.timestamp < NEWS_CACHE_TTL) {
+    return res.json(newsCache.data);
+  }
+  try {
+    const articles = await fetchNews();
+    newsCache = { data: { articles }, timestamp: now };
+    res.json({ articles });
+  } catch (err) {
+    console.error('News fetch failed:', err.message);
+    res.json({ articles: [] });
+  }
+});
+
 // API endpoint: get current shutdown status
 app.get('/api/status', async (req, res) => {
   const status = getShutdownStatus();
@@ -345,7 +394,7 @@ app.get('/api/status', async (req, res) => {
     }
   }
 
-  res.json({
+  const response = {
     ...status,
     daysClosed: status.since ? daysBetween(status.since, null) : null,
     liveCheck: liveSignal,
@@ -353,7 +402,23 @@ app.get('/api/status', async (req, res) => {
     lastScraped: scrapeCache.timestamp
       ? new Date(scrapeCache.timestamp).toISOString()
       : null,
-  });
+  };
+
+  // Check for status change and send push notifications
+  const currentState = `${status.isClosed}-${status.type || 'none'}`;
+  if (lastKnownState !== null && lastKnownState !== currentState) {
+    const statusWord = status.isClosed
+      ? (status.type === 'partial' ? 'partially closed' : 'closed')
+      : 'open';
+    sendNotificationToAll({
+      title: 'Government Shutdown Update',
+      body: `The US government is now ${statusWord}.`,
+      url: '/',
+    }).catch((err) => console.error('Push notification error:', err.message));
+  }
+  lastKnownState = currentState;
+
+  res.json(response);
 });
 
 if (require.main === module) {

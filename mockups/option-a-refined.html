@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Option A: Refined Current — isthegovernmentclosed.com</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Screen-reader only utility ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Skip navigation ── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 10000;
+  padding: 12px 24px;
+  background: #fff;
+  color: #07080c;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 8px 8px;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #4fc3f7;
+  outline-offset: 2px;
+}
+
+/* ── Focus indicators ── */
+:focus-visible {
+  outline: 3px solid #4fc3f7;
+  outline-offset: 3px;
+}
+
+/* ── CSS custom properties ── */
+:root {
+  --bg: #07080c;
+  --text-primary: #e8e6e1;
+  --text-secondary: #9e9a93;
+  --text-dim: #5c5953;
+  --status-color: #22c55e;
+  --status-glow: rgba(34, 197, 94, 0.25);
+  --status-glow-strong: rgba(34, 197, 94, 0.4);
+  --status-border: rgba(34, 197, 94, 0.2);
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-border: rgba(255, 255, 255, 0.06);
+  --transition-speed: 0.4s;
+}
+
+/* ── State: Yes (red) ── */
+[data-state="yes"] {
+  --status-color: #ef4444;
+  --status-glow: rgba(239, 68, 68, 0.25);
+  --status-glow-strong: rgba(239, 68, 68, 0.4);
+  --status-border: rgba(239, 68, 68, 0.2);
+}
+
+/* ── State: Partially (amber) ── */
+[data-state="partially"] {
+  --status-color: #f59e0b;
+  --status-glow: rgba(245, 158, 11, 0.25);
+  --status-glow-strong: rgba(245, 158, 11, 0.4);
+  --status-border: rgba(245, 158, 11, 0.2);
+}
+
+/* ── Body ── */
+body {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+  transition: background var(--transition-speed) ease;
+}
+
+[data-state="yes"] body {
+  background: #0c0708;
+}
+
+/* ── Grain overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ── Layout ── */
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Header ── */
+.site-header {
+  padding: 32px 0 16px;
+}
+.site-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.site-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 48px 0 40px;
+  text-align: center;
+}
+.hero-question {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  font-style: italic;
+}
+.hero-answer-wrap {
+  display: inline-block;
+  border: 1px solid var(--status-border);
+  border-radius: 16px;
+  padding: 16px 56px;
+  transition: border-color var(--transition-speed) ease;
+}
+.hero-answer {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(5rem, 15vw, 10rem);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--status-color);
+  text-shadow: 0 0 40px var(--status-glow-strong);
+  transition: color var(--transition-speed) ease, text-shadow var(--transition-speed) ease;
+}
+
+/* ── Status indicator chip ── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--card-border);
+  border-radius: 100px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-color);
+  box-shadow: 0 0 8px var(--status-glow);
+  animation: pulse 2s ease-in-out infinite;
+  transition: background var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ── Section titles ── */
+.section-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+/* ── Timeline section ── */
+.timeline-section {
+  padding: 32px 0;
+}
+
+/* ── Shutdown card ── */
+.shutdown-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: border-color 0.2s ease;
+}
+.shutdown-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.shutdown-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.shutdown-year {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.shutdown-days {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--status-color);
+  transition: color var(--transition-speed) ease;
+}
+.shutdown-dates {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+.shutdown-type {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 3px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 4px;
+}
+.shutdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.shutdown-toggle:hover,
+.shutdown-toggle:focus-visible {
+  color: var(--text-secondary);
+}
+.shutdown-toggle-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 0.65rem;
+}
+.shutdown-toggle[aria-expanded="true"] .shutdown-toggle-icon {
+  transform: rotate(90deg);
+}
+.shutdown-description {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--card-border);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  display: none;
+}
+.shutdown-description.is-open {
+  display: block;
+  animation: fadeIn var(--transition-speed) ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Chart section ── */
+.chart-section {
+  padding: 32px 0 48px;
+}
+.chart-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chart-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 48px;
+  align-items: center;
+  gap: 12px;
+}
+.chart-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: right;
+  white-space: nowrap;
+}
+.chart-bar-track {
+  height: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.chart-bar {
+  height: 100%;
+  background: var(--status-color);
+  border-radius: 4px;
+  opacity: 0.75;
+  transition: width 0.6s ease, background var(--transition-speed) ease;
+  min-width: 2px;
+}
+.chart-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-align: left;
+}
+
+/* ── Footer ── */
+.site-footer {
+  padding: 24px 0 40px;
+  border-top: 1px solid var(--card-border);
+}
+.footer-text {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+.footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: color 0.2s, border-color 0.2s;
+}
+.footer-link:hover,
+.footer-link:focus-visible {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Toggle button ── */
+.state-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 100px;
+  color: var(--text-secondary);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+.state-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+.state-toggle:focus-visible {
+  outline: 3px solid #4fc3f7;
+  outline-offset: 3px;
+}
+.state-toggle kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: var(--text-dim);
+}
+
+/* ── prefers-reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 520px) {
+  .hero { padding: 36px 0 28px; }
+  .hero-answer-wrap { padding: 12px 32px; }
+  .chart-row { grid-template-columns: 80px 1fr 40px; gap: 8px; }
+  .chart-label { font-size: 0.7rem; }
+  .state-toggle { bottom: 16px; right: 16px; padding: 8px 16px; font-size: 0.7rem; }
+}
+</style>
+</head>
+<body>
+<div data-state="no" id="stateRoot">
+
+<!-- Skip navigation -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="container">
+    <span class="site-title">isthegovernmentclosed.com</span>
+    <span class="site-title" aria-hidden="true">Option A: Refined</span>
+  </div>
+</header>
+
+<!-- Main -->
+<main id="main-content">
+
+  <!-- Hero -->
+  <section class="hero" aria-labelledby="hero-question">
+    <div class="container">
+      <h1 id="hero-question" class="hero-question">Is the government closed?</h1>
+      <div class="hero-answer-wrap">
+        <div class="hero-answer" id="heroAnswer" aria-live="polite" aria-atomic="true" role="status">No</div>
+      </div>
+      <div>
+        <div class="status-chip" id="statusChip">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="statusText">All federal agencies operating normally</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timeline -->
+  <section class="timeline-section" aria-labelledby="timeline-heading">
+    <div class="container">
+      <h2 id="timeline-heading" class="section-title">Recent Shutdowns</h2>
+
+      <article class="shutdown-card">
+        <div class="shutdown-card-header">
+          <div>
+            <span class="shutdown-year">2018&ndash;2019</span>
+            <div class="shutdown-dates">Dec 22, 2018 &mdash; Jan 25, 2019</div>
+            <span class="shutdown-type">Full shutdown</span>
+          </div>
+          <span class="shutdown-days" aria-label="35 days duration">35 days</span>
+        </div>
+        <button
+          class="shutdown-toggle"
+          aria-expanded="false"
+          aria-controls="shutdown-desc-1"
+          id="shutdown-toggle-1"
+        >
+          <span class="shutdown-toggle-icon" aria-hidden="true">&#9654;</span>
+          <span>Details</span>
+        </button>
+        <div class="shutdown-description" id="shutdown-desc-1" role="region" aria-labelledby="shutdown-toggle-1">
+          The longest government shutdown in U.S. history occurred over a dispute about funding for a border wall along the U.S.&ndash;Mexico border. Approximately 800,000 federal workers were furloughed or required to work without pay. The shutdown ended on January 25, 2019 when a three-week continuing resolution was signed.
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Chart -->
+  <section class="chart-section" aria-labelledby="chart-heading">
+    <div class="container">
+      <h2 id="chart-heading" class="section-title">Days Closed by President</h2>
+      <ul class="chart-list" role="list" aria-label="Shutdown days by president bar chart">
+        <li class="chart-row">
+          <span class="chart-label">Carter</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar" style="width: 100%" role="img" aria-label="Carter: 69 days, 100% of maximum"></div>
+          </div>
+          <span class="chart-value">69d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Reagan</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar" style="width: 20.3%" role="img" aria-label="Reagan: 14 days, 20% of maximum"></div>
+          </div>
+          <span class="chart-value">14d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">G.H.W. Bush</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar" style="width: 5.8%" role="img" aria-label="G.H.W. Bush: 4 days, 6% of maximum"></div>
+          </div>
+          <span class="chart-value">4d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Clinton</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar" style="width: 37.7%" role="img" aria-label="Clinton: 26 days, 38% of maximum"></div>
+          </div>
+          <span class="chart-value">26d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Obama</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar" style="width: 23.2%" role="img" aria-label="Obama: 16 days, 23% of maximum"></div>
+          </div>
+          <span class="chart-value">16d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Trump</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar" style="width: 100%" role="img" aria-label="Trump: 69 days, 100% of maximum"></div>
+          </div>
+          <span class="chart-value">69d</span>
+        </li>
+        <li class="chart-row">
+          <span class="chart-label">Biden</span>
+          <div class="chart-bar-track" role="presentation">
+            <div class="chart-bar" style="width: 0%" role="img" aria-label="Biden: 0 days"></div>
+          </div>
+          <span class="chart-value">0d</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <div class="container">
+    <p class="footer-text">
+      Data sourced from public records &middot;
+      <a href="#" class="footer-link">About this site</a>
+    </p>
+  </div>
+</footer>
+
+<!-- Toggle button -->
+<button
+  class="state-toggle"
+  id="stateToggle"
+  aria-label="Toggle display state. Currently showing: No. Press T to cycle."
+>
+  Toggle State <kbd aria-hidden="true">(T)</kbd>
+</button>
+
+</div><!-- /stateRoot -->
+
+<script>
+(function () {
+  'use strict';
+
+  var STATES = [
+    {
+      key: 'no',
+      answer: 'No',
+      status: 'All federal agencies operating normally',
+      label: 'No'
+    },
+    {
+      key: 'yes',
+      answer: 'Yes',
+      status: 'Federal government is shut down',
+      label: 'Yes'
+    },
+    {
+      key: 'partially',
+      answer: 'Partially',
+      status: 'Partial government shutdown in effect',
+      label: 'Partially'
+    }
+  ];
+
+  var currentIndex = 0;
+  var root = document.getElementById('stateRoot');
+  var heroAnswer = document.getElementById('heroAnswer');
+  var statusText = document.getElementById('statusText');
+  var toggleBtn = document.getElementById('stateToggle');
+
+  function applyState(index) {
+    var state = STATES[index];
+    root.setAttribute('data-state', state.key);
+    heroAnswer.textContent = state.answer;
+    statusText.textContent = state.status;
+    toggleBtn.setAttribute(
+      'aria-label',
+      'Toggle display state. Currently showing: ' + state.label + '. Press T to cycle.'
+    );
+  }
+
+  function cycleState() {
+    currentIndex = (currentIndex + 1) % STATES.length;
+    applyState(currentIndex);
+  }
+
+  toggleBtn.addEventListener('click', cycleState);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 't' || e.key === 'T') {
+      // Don't trigger if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+      cycleState();
+    }
+  });
+
+  // Shutdown card expand/collapse
+  var shutdownToggle = document.getElementById('shutdown-toggle-1');
+  var shutdownDesc = document.getElementById('shutdown-desc-1');
+
+  if (shutdownToggle && shutdownDesc) {
+    shutdownToggle.addEventListener('click', function () {
+      var expanded = shutdownToggle.getAttribute('aria-expanded') === 'true';
+      shutdownToggle.setAttribute('aria-expanded', String(!expanded));
+      shutdownDesc.classList.toggle('is-open', !expanded);
+    });
+  }
+})();
+</script>
+</body>
+</html>
