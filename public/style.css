@@ -819,6 +819,177 @@ body.partial-shutdown .counter-number {
   }
 }
 
+/* === Reopening Votes === */
+.votes-section {
+  padding: 1rem 0 2rem;
+}
+
+.votes-subtitle {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 300;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.votes-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.vote-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  transition: background 0.2s ease;
+}
+
+.vote-card:hover {
+  background: var(--bg-card-hover);
+}
+
+.vote-card.vote-passed {
+  border-color: rgba(74, 222, 128, 0.15);
+}
+
+.vote-card.vote-failed {
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.vote-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.vote-card-tags {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.vote-chamber {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.vote-chamber-house {
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+.vote-chamber-senate {
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+.vote-result {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border);
+}
+
+.vote-result.vote-passed {
+  color: var(--green);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.vote-result.vote-failed {
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.vote-date {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.vote-card-bill {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+.vote-card-question {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 300;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+.vote-progress {
+  margin-top: 0.625rem;
+}
+
+.vote-progress-bar-wrap {
+  position: relative;
+  height: 8px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.vote-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 2px;
+}
+
+.vote-progress-threshold {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  background: var(--text-tertiary);
+  border-radius: 1px;
+  opacity: 0.5;
+}
+
+.vote-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.04em;
+}
+
+.vote-yea {
+  color: var(--green);
+}
+
+.vote-nay {
+  color: var(--red);
+}
+
+.vote-threshold-label {
+  color: var(--text-tertiary);
+}
+
 /* === News Feed === */
 .news-section {
   padding: 1rem 0 2rem;

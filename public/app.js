@@ -46,6 +46,8 @@ const impactServices = document.getElementById('impact-services');
 const impactServicesList = document.getElementById('impact-services-list');
 const newsSection = document.getElementById('news-section');
 const newsFeed = document.getElementById('news-feed');
+const votesSection = document.getElementById('votes-section');
+const votesFeed = document.getElementById('votes-feed');
 
 // Format date for display
 function formatDate(dateStr) {
@@ -394,6 +396,74 @@ function renderNews(articles) {
     .join('');
 }
 
+// Render reopening votes
+function renderVotes(votes) {
+  if (!votes || votes.length === 0) {
+    votesSection.classList.add('hidden');
+    return;
+  }
+
+  votesSection.classList.remove('hidden');
+  votesFeed.innerHTML = votes
+    .map((v) => {
+      const hasCount = v.yea !== null;
+      const passed = v.result && v.result.toLowerCase().includes('passed') ||
+                     v.result && v.result.toLowerCase().includes('agreed');
+      const failed = v.result && v.result.toLowerCase().includes('failed') ||
+                     v.result && v.result.toLowerCase().includes('rejected') ||
+                     v.result && v.result.toLowerCase().includes('not agreed');
+      const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
+
+      let progressHtml = '';
+      if (hasCount && v.threshold) {
+        const pct = Math.min(100, Math.round((v.yea / v.threshold) * 100));
+        const barColor = passed ? 'var(--green)' : failed ? 'var(--red)' : 'var(--amber)';
+        progressHtml = `
+          <div class="vote-progress">
+            <div class="vote-progress-bar-wrap">
+              <div class="vote-progress-bar" style="width: ${pct}%; background: ${barColor}"></div>
+              <div class="vote-progress-threshold" style="left: 100%"></div>
+            </div>
+            <div class="vote-progress-labels">
+              <span class="vote-yea">${v.yea} yea</span>
+              <span class="vote-nay">${v.nay} nay</span>
+              <span class="vote-threshold-label">${escapeHtml(v.thresholdLabel)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      const chamberTag = `<span class="vote-chamber vote-chamber-${v.chamber.toLowerCase()}">${escapeHtml(v.chamber)}</span>`;
+      const resultTag = v.result ? `<span class="vote-result ${resultClass}">${escapeHtml(v.result)}</span>` : '';
+      const dateStr = v.date || '';
+
+      return `
+        <div class="vote-card ${resultClass}">
+          <div class="vote-card-header">
+            <div class="vote-card-tags">${chamberTag}${resultTag}</div>
+            <span class="vote-date">${escapeHtml(dateStr)}</span>
+          </div>
+          <div class="vote-card-bill">${escapeHtml(v.bill || v.question || 'Funding Vote')}</div>
+          ${v.question && v.question !== v.bill ? `<div class="vote-card-question">${escapeHtml(v.question)}</div>` : ''}
+          ${progressHtml}
+        </div>
+      `;
+    })
+    .join('');
+}
+
+// Fetch votes from API
+async function fetchVotes() {
+  try {
+    const res = await fetch('/api/votes');
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    renderVotes(data.votes);
+  } catch (err) {
+    votesSection.classList.add('hidden');
+  }
+}
+
 // Fetch news from API
 async function fetchNewsFeed() {
   try {
@@ -594,9 +664,11 @@ if (window.__STATUS__) {
   Promise.all([fetchStatus(), fetchTimeline()]);
 }
 
-// Fetch news on load
+// Fetch news and votes on load
 fetchNewsFeed();
+fetchVotes();
 
-// Refresh status and news periodically
+// Refresh status, news, and votes periodically
 setInterval(fetchStatus, 15 * 60 * 1000);
 setInterval(fetchNewsFeed, 15 * 60 * 1000);
+setInterval(fetchVotes, 30 * 60 * 1000);
