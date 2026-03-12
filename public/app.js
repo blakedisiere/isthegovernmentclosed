@@ -65,6 +65,19 @@ function formatShortDate(dateStr) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Generate congress.gov URL from a bill string like "H.R. 6201 — End the Shutdown Act"
+function getCongressUrl(bill, date) {
+  if (!bill) return null;
+  const match = bill.match(/^(H\.R\.|S\.)\s*(\d+)/i);
+  if (!match) return null;
+  const prefix = match[1].toUpperCase();
+  const number = match[2];
+  const year = date ? parseInt(date.split('-')[0]) : new Date().getFullYear();
+  const congress = Math.floor((year - 1) / 2) - 893;
+  const type = prefix === 'S.' ? 'senate-bill' : 'house-bill';
+  return `https://www.congress.gov/bill/${congress}th-congress/${type}/${number}`;
+}
+
 // Animate counter from 0 to target value
 function animateCounter(target) {
   counterNumber.textContent = '0';
@@ -138,10 +151,16 @@ function renderCompactVotes(votes) {
     const resultIcon = passed ? '&#10003;' : failed ? '&#10007;' : '&#8211;';
     const chamberClass = v.chamber.toLowerCase();
 
+    const url = getCongressUrl(v.bill, v.date);
+    const billText = escapeHtml(v.bill || 'Funding Vote');
+    const billHtml = url
+      ? `<a class="compact-vote-bill" href="${url}" target="_blank" rel="noopener noreferrer">${billText}</a>`
+      : `<span class="compact-vote-bill">${billText}</span>`;
+
     return `
       <div class="compact-vote ${resultClass}">
         <span class="compact-vote-chamber compact-vote-chamber-${chamberClass}">${escapeHtml(v.chamber)}</span>
-        <span class="compact-vote-bill">${escapeHtml(v.bill || 'Funding Vote')}</span>
+        ${billHtml}
         <span class="compact-vote-result ${resultClass}">${resultIcon} ${escapeHtml(v.result || '')}</span>
       </div>
     `;
@@ -550,7 +569,11 @@ function renderVotes(votes) {
             <div class="vote-card-tags">${chamberTag}${resultTag}</div>
             <span class="vote-date">${escapeHtml(dateStr)}</span>
           </div>
-          <div class="vote-card-bill">${escapeHtml(v.bill || v.question || 'Funding Vote')}</div>
+          <div class="vote-card-bill">${(() => {
+            const url = getCongressUrl(v.bill, v.date);
+            const text = escapeHtml(v.bill || v.question || 'Funding Vote');
+            return url ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>` : text;
+          })()}</div>
           ${v.question && v.question !== v.bill ? `<div class="vote-card-question">${escapeHtml(v.question)}</div>` : ''}
           ${progressHtml}
         </div>
