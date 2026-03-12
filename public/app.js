@@ -100,6 +100,111 @@ function clearShimmer() {
 // Track current status for sharing
 let currentShareText = '';
 
+// Cached data for coordinating votes with shutdowns
+let cachedStatus = null;
+let cachedShutdowns = null;
+let cachedVotes = null;
+
+// Match votes to shutdowns by date range
+function groupVotesByShutdown(votes, shutdowns) {
+  const groups = {}; // keyed by shutdown start date
+  const unmatched = [];
+  for (const v of votes) {
+    if (!v.date) { unmatched.push(v); continue; }
+    let matched = false;
+    for (const s of shutdowns) {
+      if (v.date >= s.start && (s.end === null || v.date <= s.end)) {
+        if (!groups[s.start]) groups[s.start] = [];
+        groups[s.start].push(v);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) unmatched.push(v);
+  }
+  return { groups, unmatched };
+}
+
+// Render compact vote cards for embedding inside timeline cards
+function renderCompactVotes(votes) {
+  const items = votes.map(v => {
+    const resultLower = v.result ? v.result.toLowerCase() : '';
+    const failed = resultLower.includes('failed') ||
+                   resultLower.includes('rejected') ||
+                   resultLower.includes('not agreed');
+    const passed = !failed && (resultLower.includes('passed') ||
+                   resultLower.includes('agreed'));
+    const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
+    const resultIcon = passed ? '&#10003;' : failed ? '&#10007;' : '&#8211;';
+    const chamberClass = v.chamber.toLowerCase();
+
+    return `
+      <div class="compact-vote ${resultClass}">
+        <span class="compact-vote-chamber compact-vote-chamber-${chamberClass}">${escapeHtml(v.chamber)}</span>
+        <span class="compact-vote-bill">${escapeHtml(v.bill || 'Funding Vote')}</span>
+        <span class="compact-vote-result ${resultClass}">${resultIcon} ${escapeHtml(v.result || '')}</span>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="compact-votes-section">
+      <div class="compact-votes-label">Reopening Votes</div>
+      ${items}
+    </div>
+  `;
+}
+
+// Embed votes into timeline cards for historical shutdowns
+function embedVotesInTimeline(voteGroups, excludeShutdownStart) {
+  const entries = timelineEl.querySelectorAll('.timeline-entry');
+  const sorted = [...cachedShutdowns].reverse(); // same order as renderTimeline
+
+  entries.forEach((entry, i) => {
+    const shutdown = sorted[i];
+    if (!shutdown) return;
+    if (shutdown.start === excludeShutdownStart) return;
+
+    const votes = voteGroups[shutdown.start];
+    if (!votes || votes.length === 0) return;
+
+    const card = entry.querySelector('.timeline-card');
+    const descDiv = card.querySelector('.timeline-description');
+    const votesHtml = renderCompactVotes(votes);
+
+    if (descDiv) {
+      // Remove any previously embedded votes before re-adding
+      const existing = descDiv.querySelector('.compact-votes-section');
+      if (existing) existing.remove();
+      descDiv.insertAdjacentHTML('beforeend', votesHtml);
+    } else {
+      const newDesc = document.createElement('div');
+      newDesc.className = 'timeline-description';
+      newDesc.innerHTML = votesHtml;
+      card.appendChild(newDesc);
+    }
+  });
+}
+
+// Coordinate vote rendering once all data is available
+function coordinateVotesRendering() {
+  if (!cachedVotes || !cachedShutdowns || !cachedStatus) return;
+
+  const { groups } = groupVotesByShutdown(cachedVotes, cachedShutdowns);
+
+  if (cachedStatus.isClosed && cachedStatus.since) {
+    // Active shutdown: standalone section shows only current shutdown's votes
+    const currentVotes = groups[cachedStatus.since] || [];
+    renderVotes(currentVotes);
+    // Embed historical votes in timeline cards (skip current shutdown)
+    embedVotesInTimeline(groups, cachedStatus.since);
+  } else {
+    // No active shutdown: hide standalone, embed all in timeline
+    votesSection.classList.add('hidden');
+    embedVotesInTimeline(groups, null);
+  }
+}
+
 // Render status data into the DOM
 function renderStatus(data) {
   clearShimmer();
@@ -460,7 +565,8 @@ async function fetchVotes() {
     const res = await fetch('/api/votes');
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
-    renderVotes(data.votes);
+    cachedVotes = data.votes;
+    coordinateVotesRendering();
   } catch (err) {
     votesSection.classList.add('hidden');
   }
@@ -496,7 +602,10 @@ async function fetchStatus() {
   try {
     const res = await fetch('/api/status');
     if (!res.ok) throw new Error(res.statusText);
-    renderStatus(await res.json());
+    const data = await res.json();
+    cachedStatus = data;
+    renderStatus(data);
+    coordinateVotesRendering();
   } catch (err) {
     showError();
   }
@@ -508,8 +617,10 @@ async function fetchTimeline() {
     const res = await fetch('/api/shutdowns');
     if (!res.ok) throw new Error(res.statusText);
     const timelineData = await res.json();
+    cachedShutdowns = timelineData.shutdowns;
     renderStats(timelineData);
     renderTimeline(timelineData);
+    coordinateVotesRendering();
   } catch (err) {
     timelineEl.innerHTML = '<p style="color:var(--text-tertiary);font-size:0.875rem;">Unable to load shutdown history.</p>';
   }
@@ -660,6 +771,7 @@ impactToggle.addEventListener('keydown', (e) => {
 
 // Initialize — use SSR data if available, then fetch fresh data
 if (window.__STATUS__) {
+  cachedStatus = window.__STATUS__;
   renderStatus(window.__STATUS__);
   fetchTimeline();
 } else {
