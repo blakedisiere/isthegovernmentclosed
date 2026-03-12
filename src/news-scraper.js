@@ -119,10 +119,12 @@ async function fetchNews() {
   const promises = RSS_SOURCES.map(async (source) => {
     try {
       const response = await axios.get(source.url, {
-        timeout: 10000,
+        timeout: 20000,
         headers: {
-          'User-Agent': 'IsTheGovernmentClosed/1.0 (public interest news aggregator)',
+          'User-Agent': 'Mozilla/5.0 (compatible; IsTheGovernmentClosed/1.0; +https://isthegovernmentclosed.com)',
+          'Accept': 'application/rss+xml, application/xml, text/xml, */*',
         },
+        maxRedirects: 5,
       });
 
       const items = parseRssItems(response.data);
