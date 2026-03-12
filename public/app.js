@@ -407,11 +407,13 @@ function renderVotes(votes) {
   votesFeed.innerHTML = votes
     .map((v) => {
       const hasCount = v.yea !== null;
-      const passed = v.result && v.result.toLowerCase().includes('passed') ||
-                     v.result && v.result.toLowerCase().includes('agreed');
-      const failed = v.result && v.result.toLowerCase().includes('failed') ||
-                     v.result && v.result.toLowerCase().includes('rejected') ||
-                     v.result && v.result.toLowerCase().includes('not agreed');
+      const resultLower = v.result ? v.result.toLowerCase() : '';
+      // Check failed first — "not agreed" contains "agreed" so order matters
+      const failed = resultLower.includes('failed') ||
+                     resultLower.includes('rejected') ||
+                     resultLower.includes('not agreed');
+      const passed = !failed && (resultLower.includes('passed') ||
+                     resultLower.includes('agreed'));
       const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
 
       let progressHtml = '';

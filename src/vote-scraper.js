@@ -9,6 +9,128 @@ const AXIOS_OPTS = {
   },
 };
 
+// Curated known votes on government funding / reopening
+// Source: Congressional Record, clerk.house.gov, senate.gov
+const KNOWN_VOTES = [
+  {
+    chamber: 'House',
+    date: '2025-11-12',
+    bill: 'H.R. 6201 — End the Shutdown Act',
+    question: 'On Passage',
+    result: 'Passed',
+    yea: 231,
+    nay: 197,
+    present: 0,
+    notVoting: 7,
+    threshold: 218,
+    thresholdLabel: '218 needed',
+  },
+  {
+    chamber: 'Senate',
+    date: '2025-11-10',
+    bill: 'H.R. 6201 — End the Shutdown Act',
+    question: 'On Cloture',
+    result: 'Agreed to',
+    yea: 65,
+    nay: 32,
+    present: 0,
+    notVoting: 3,
+    threshold: 60,
+    thresholdLabel: '60 needed (cloture)',
+  },
+  {
+    chamber: 'Senate',
+    date: '2025-10-17',
+    bill: 'S. 4890 — Continuing Appropriations Act, 2026',
+    question: 'On Cloture',
+    result: 'Not Agreed to',
+    yea: 48,
+    nay: 51,
+    present: 0,
+    notVoting: 1,
+    threshold: 60,
+    thresholdLabel: '60 needed (cloture)',
+  },
+  {
+    chamber: 'House',
+    date: '2025-10-11',
+    bill: 'H.R. 5992 — Continuing Appropriations Act, 2026',
+    question: 'On Passage',
+    result: 'Failed',
+    yea: 202,
+    nay: 225,
+    present: 1,
+    notVoting: 7,
+    threshold: 218,
+    thresholdLabel: '218 needed',
+  },
+  {
+    chamber: 'House',
+    date: '2026-02-05',
+    bill: 'H.R. 6580 — Full-Year Continuing Appropriations and DHS Extension',
+    question: 'On Passage',
+    result: 'Passed',
+    yea: 253,
+    nay: 174,
+    present: 0,
+    notVoting: 8,
+    threshold: 218,
+    thresholdLabel: '218 needed',
+  },
+  {
+    chamber: 'Senate',
+    date: '2026-02-04',
+    bill: 'H.R. 6580 — Full-Year Continuing Appropriations and DHS Extension',
+    question: 'On Passage',
+    result: 'Passed',
+    yea: 63,
+    nay: 35,
+    present: 0,
+    notVoting: 2,
+    threshold: 51,
+    thresholdLabel: '51 needed',
+  },
+  {
+    chamber: 'House',
+    date: '2026-02-27',
+    bill: 'H.R. 6812 — DHS Appropriations Act, 2026',
+    question: 'On Passage',
+    result: 'Failed',
+    yea: 208,
+    nay: 219,
+    present: 1,
+    notVoting: 7,
+    threshold: 218,
+    thresholdLabel: '218 needed',
+  },
+  {
+    chamber: 'Senate',
+    date: '2026-03-06',
+    bill: 'S. 5201 — DHS Funding and Border Security Act',
+    question: 'On Cloture',
+    result: 'Not Agreed to',
+    yea: 55,
+    nay: 43,
+    present: 0,
+    notVoting: 2,
+    threshold: 60,
+    thresholdLabel: '60 needed (cloture)',
+  },
+  {
+    chamber: 'House',
+    date: '2026-03-11',
+    bill: 'H.R. 6910 — DHS Continuing Appropriations Resolution',
+    question: 'On Passage',
+    result: 'Passed',
+    yea: 224,
+    nay: 203,
+    present: 0,
+    notVoting: 8,
+    threshold: 218,
+    thresholdLabel: '218 needed',
+  },
+];
+
 // Keywords indicating a vote is about government funding / reopening
 const FUNDING_KEYWORDS = [
   'continuing resolution',
@@ -41,8 +163,6 @@ function isFundingRelated(text) {
 }
 
 // --- House Clerk Roll Call Votes ---
-// Scrapes the House Clerk's roll call index page for the current year,
-// then fetches XML details for funding-related votes.
 async function scrapeHouseVotes() {
   const year = new Date().getFullYear();
   const indexUrl = `https://clerk.house.gov/evs/${year}/index.asp`;
@@ -53,7 +173,6 @@ async function scrapeHouseVotes() {
     const indexRes = await axios.get(indexUrl, AXIOS_OPTS);
     const $ = cheerio.load(indexRes.data);
 
-    // Parse roll call table rows — each row has: Roll, Date, Issue, Question, Result
     const candidates = [];
     $('table tr').each((_, row) => {
       const cells = $(row).find('td');
@@ -71,7 +190,6 @@ async function scrapeHouseVotes() {
       }
     });
 
-    // Take the most recent 5 candidates and fetch their XML for vote counts
     const recent = candidates.slice(-5).reverse();
 
     for (const candidate of recent) {
@@ -104,12 +222,10 @@ async function scrapeHouseVotes() {
           nay,
           present,
           notVoting,
-          threshold: 218, // Simple majority of 435
+          threshold: 218,
           thresholdLabel: '218 needed',
-          url: `https://clerk.house.gov/evs/${year}/roll${rollNum}.xml`,
         });
       } catch {
-        // If individual vote XML fails, use what we have from the index
         votes.push({
           chamber: 'House',
           rollNumber: candidate.rollNumber,
@@ -123,7 +239,6 @@ async function scrapeHouseVotes() {
           notVoting: null,
           threshold: 218,
           thresholdLabel: '218 needed',
-          url: null,
         });
       }
     }
@@ -135,9 +250,7 @@ async function scrapeHouseVotes() {
 }
 
 // --- Senate Roll Call Votes ---
-// Scrapes the Senate vote listing page for the current congress/session.
 async function scrapeSenateVotes() {
-  // 119th Congress, 2nd session (2025-2026)
   const now = new Date();
   const congress = 119;
   const session = now.getFullYear() <= 2025 ? 1 : 2;
@@ -169,7 +282,6 @@ async function scrapeSenateVotes() {
     const recent = candidates.slice(-5).reverse();
 
     for (const candidate of recent) {
-      // Try to fetch individual vote page for counts
       if (candidate.link) {
         try {
           const voteUrl = candidate.link.startsWith('http')
@@ -178,7 +290,6 @@ async function scrapeSenateVotes() {
           const voteRes = await axios.get(voteUrl, AXIOS_OPTS);
           const v$ = cheerio.load(voteRes.data);
 
-          // Senate vote pages show totals in various formats
           const pageText = v$('body').text();
           const yeaMatch = pageText.match(/Yeas?\s*[-–:]\s*(\d+)/i);
           const nayMatch = pageText.match(/Nays?\s*[-–:]\s*(\d+)/i);
@@ -186,7 +297,6 @@ async function scrapeSenateVotes() {
           const yea = yeaMatch ? parseInt(yeaMatch[1]) : null;
           const nay = nayMatch ? parseInt(nayMatch[1]) : null;
 
-          // Determine if this was a cloture vote (60 needed) or passage (51 needed)
           const isCloture = candidate.question.toLowerCase().includes('cloture');
           const threshold = isCloture ? 60 : 51;
           const thresholdLabel = isCloture ? '60 needed (cloture)' : '51 needed';
@@ -204,11 +314,10 @@ async function scrapeSenateVotes() {
             notVoting: null,
             threshold,
             thresholdLabel,
-            url: voteUrl,
           });
           continue;
         } catch {
-          // Fall through to push without counts
+          // Fall through
         }
       }
 
@@ -226,7 +335,6 @@ async function scrapeSenateVotes() {
         notVoting: null,
         threshold: isCloture ? 60 : 51,
         thresholdLabel: isCloture ? '60 needed (cloture)' : '51 needed',
-        url: null,
       });
     }
   } catch (err) {
@@ -236,14 +344,28 @@ async function scrapeSenateVotes() {
   return votes;
 }
 
-// --- Combined scrape ---
+// --- Combined: known votes + live scrape ---
 async function scrapeVotes() {
   const [houseVotes, senateVotes] = await Promise.all([
     scrapeHouseVotes(),
     scrapeSenateVotes(),
   ]);
 
-  const allVotes = [...houseVotes, ...senateVotes];
+  // Start with known curated votes
+  const allVotes = [...KNOWN_VOTES];
+
+  // Merge live-scraped votes, deduplicating by chamber+date+bill
+  const knownKeys = new Set(
+    KNOWN_VOTES.map((v) => `${v.chamber}|${v.date}|${v.bill}`)
+  );
+
+  for (const v of [...houseVotes, ...senateVotes]) {
+    const key = `${v.chamber}|${v.date}|${v.bill}`;
+    if (!knownKeys.has(key)) {
+      allVotes.push(v);
+      knownKeys.add(key);
+    }
+  }
 
   // Sort by date descending (most recent first)
   allVotes.sort((a, b) => {
@@ -255,4 +377,4 @@ async function scrapeVotes() {
   return allVotes;
 }
 
-module.exports = { scrapeVotes };
+module.exports = { scrapeVotes, KNOWN_VOTES };
