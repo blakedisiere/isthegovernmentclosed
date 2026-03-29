@@ -190,9 +190,10 @@ async function scrapeHouseVotes() {
       }
     });
 
-    const recent = candidates.slice(-5).reverse();
+    // Process all funding-related candidates (most recent first)
+    candidates.reverse();
 
-    for (const candidate of recent) {
+    for (const candidate of candidates) {
       try {
         const rollNum = candidate.rollNumber.replace(/\D/g, '').padStart(3, '0');
         const xmlUrl = `https://clerk.house.gov/evs/${year}/roll${rollNum}.xml`;
@@ -279,9 +280,10 @@ async function scrapeSenateVotes() {
       }
     });
 
-    const recent = candidates.slice(-5).reverse();
+    // Process all funding-related candidates (most recent first)
+    candidates.reverse();
 
-    for (const candidate of recent) {
+    for (const candidate of candidates) {
       if (candidate.link) {
         try {
           const voteUrl = candidate.link.startsWith('http')
