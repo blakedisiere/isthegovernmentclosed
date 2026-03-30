@@ -659,6 +659,24 @@ body.partial-shutdown .counter-number {
   padding-top: 0.5rem;
 }
 
+.timeline-reopening-bill {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: 0.375rem;
+  border-top: none !important;
+  padding-top: 0 !important;
+}
+
+.timeline-reopening-bill a {
+  color: var(--green);
+  text-decoration: none;
+  font-weight: 400;
+}
+
+.timeline-reopening-bill a:hover {
+  text-decoration: underline;
+}
+
 /* Scroll-reveal animation */
 .timeline-entry {
   opacity: 0;

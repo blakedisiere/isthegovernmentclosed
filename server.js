@@ -310,6 +310,7 @@ app.get('/api/shutdowns', (req, res) => {
     type: s.type || 'full',
     days: daysBetween(s.start, s.end),
     description: s.description || null,
+    reopeningBill: s.reopeningBill || null,
   }));
   const totalDays = shutdowns.reduce((sum, s) => sum + s.days, 0);
   const maxDays = Math.max(...shutdowns.map((s) => s.days));
