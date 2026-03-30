@@ -179,7 +179,8 @@ function renderCompactVotes(votes) {
     const resultLower = v.result ? v.result.toLowerCase() : '';
     const failed = resultLower.includes('failed') ||
                    resultLower.includes('rejected') ||
-                   resultLower.includes('not agreed');
+                   resultLower.includes('not agreed') ||
+                   resultLower.includes('vetoed');
     const passed = !failed && (resultLower.includes('passed') ||
                    resultLower.includes('agreed'));
     const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
@@ -575,10 +576,11 @@ function renderVotes(votes) {
     .map((v) => {
       const hasCount = v.yea !== null;
       const resultLower = v.result ? v.result.toLowerCase() : '';
-      // Check failed first — "not agreed" contains "agreed" so order matters
+      // Check failed/vetoed first — "not agreed" contains "agreed" so order matters
       const failed = resultLower.includes('failed') ||
                      resultLower.includes('rejected') ||
-                     resultLower.includes('not agreed');
+                     resultLower.includes('not agreed') ||
+                     resultLower.includes('vetoed');
       const passed = !failed && (resultLower.includes('passed') ||
                      resultLower.includes('agreed'));
       const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
