@@ -644,7 +644,7 @@ body.partial-shutdown .counter-number {
 }
 
 .timeline-card.expanded .timeline-description {
-  max-height: 200px;
+  max-height: 600px;
   opacity: 1;
   padding-top: 0.625rem;
 }
@@ -931,6 +931,17 @@ body.partial-shutdown .counter-number {
   margin-bottom: 0.25rem;
 }
 
+.vote-card-bill a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: border-color 0.15s;
+}
+
+.vote-card-bill a:hover {
+  border-color: var(--text-secondary);
+}
+
 .vote-card-question {
   font-family: var(--font-body);
   font-size: 0.8125rem;
@@ -988,6 +999,95 @@ body.partial-shutdown .counter-number {
 
 .vote-threshold-label {
   color: var(--text-tertiary);
+}
+
+/* === Compact Votes (inside timeline cards) === */
+.compact-votes-section {
+  margin-top: 0.625rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.compact-votes-label {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 0.5rem;
+}
+
+.compact-vote {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.75rem;
+}
+
+.compact-vote + .compact-vote {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.compact-vote-chamber {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.compact-vote-chamber-house {
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+.compact-vote-chamber-senate {
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+.compact-vote-bill {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.compact-vote-bill {
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+
+a.compact-vote-bill:hover {
+  border-color: var(--text-tertiary);
+}
+
+.compact-vote-result {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.compact-vote-result.vote-passed {
+  color: var(--green);
+}
+
+.compact-vote-result.vote-failed {
+  color: var(--red);
 }
 
 /* === News Feed === */
