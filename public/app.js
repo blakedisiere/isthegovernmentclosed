@@ -641,7 +641,7 @@ function renderVotes(votes) {
           const thresholdPct = total > 0 ? (v.threshold / total) * 100 : 50;
           // Single element with linear-gradient: green | red | amber
           const stops = nayEnd < 99.5
-            ? `var(--green) ${yeaPct.toFixed(2)}%, var(--red) ${yeaPct.toFixed(2)}%, var(--red) ${nayEnd.toFixed(2)}%, var(--amber-dim) ${nayEnd.toFixed(2)}%`
+            ? `var(--green) ${yeaPct.toFixed(2)}%, var(--red) ${yeaPct.toFixed(2)}%, var(--red) ${nayEnd.toFixed(2)}%, var(--amber) ${nayEnd.toFixed(2)}%`
             : `var(--green) ${yeaPct.toFixed(2)}%, var(--red) ${yeaPct.toFixed(2)}%`;
           progressHtml = `
             <div class="vote-progress">
