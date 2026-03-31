@@ -68,14 +68,38 @@ function formatShortDate(dateStr) {
 // Generate congress.gov URL from a bill string like "H.R. 6201 — End the Shutdown Act"
 function getCongressUrl(bill, date) {
   if (!bill) return null;
-  const match = bill.match(/^(H\.R\.|S\.)\s*(\d+)/i);
+  // Match bill prefixes: H.R., S., H.J.Res., S.J.Res., H.Con.Res., S.Con.Res.
+  const match = bill.match(/^(H\.J\.Res\.|S\.J\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.Res\.|S\.Res\.|H\.R\.|S\.)\s*(\d+)/i);
   if (!match) return null;
-  const prefix = match[1].toUpperCase();
+  const prefix = match[1].replace(/\s+/g, '').toUpperCase();
   const number = match[2];
   const year = date ? parseInt(date.split('-')[0]) : new Date().getFullYear();
   const congress = Math.floor((year - 1) / 2) - 893;
-  const type = prefix === 'S.' ? 'senate-bill' : 'house-bill';
-  return `https://www.congress.gov/bill/${congress}th-congress/${type}/${number}`;
+  const ordinal = getOrdinalSuffix(congress);
+
+  const typeMap = {
+    'H.R.': 'house-bill',
+    'S.': 'senate-bill',
+    'H.J.RES.': 'house-joint-resolution',
+    'S.J.RES.': 'senate-joint-resolution',
+    'H.CON.RES.': 'house-concurrent-resolution',
+    'S.CON.RES.': 'senate-concurrent-resolution',
+    'H.RES.': 'house-resolution',
+    'S.RES.': 'senate-resolution',
+  };
+  const type = typeMap[prefix] || 'house-bill';
+  return `https://www.congress.gov/bill/${congress}${ordinal}-congress/${type}/${number}`;
+}
+
+function getOrdinalSuffix(n) {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
 }
 
 // Animate counter from 0 to target value
@@ -118,15 +142,26 @@ let cachedStatus = null;
 let cachedShutdowns = null;
 let cachedVotes = null;
 
-// Match votes to shutdowns by date range
+// Match votes to shutdowns by date range (with buffer for pre-shutdown and reopening votes)
 function groupVotesByShutdown(votes, shutdowns) {
   const groups = {}; // keyed by shutdown start date
   const unmatched = [];
+
+  // Helper: shift a YYYY-MM-DD date by N days
+  function shiftDate(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  }
+
   for (const v of votes) {
     if (!v.date) { unmatched.push(v); continue; }
     let matched = false;
     for (const s of shutdowns) {
-      if (v.date >= s.start && (s.end === null || v.date <= s.end)) {
+      // Include votes up to 7 days before shutdown and 3 days after it ended
+      const windowStart = shiftDate(s.start, -7);
+      const windowEnd = s.end === null ? null : shiftDate(s.end, 3);
+      if (v.date >= windowStart && (windowEnd === null || v.date <= windowEnd)) {
         if (!groups[s.start]) groups[s.start] = [];
         groups[s.start].push(v);
         matched = true;
@@ -144,7 +179,8 @@ function renderCompactVotes(votes) {
     const resultLower = v.result ? v.result.toLowerCase() : '';
     const failed = resultLower.includes('failed') ||
                    resultLower.includes('rejected') ||
-                   resultLower.includes('not agreed');
+                   resultLower.includes('not agreed') ||
+                   resultLower.includes('vetoed');
     const passed = !failed && (resultLower.includes('passed') ||
                    resultLower.includes('agreed'));
     const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
@@ -399,7 +435,15 @@ function renderTimeline(data) {
     const side = cardIndex % 2 === 0 ? 'left' : 'right';
     const entryClasses = ['timeline-entry', side, ongoing ? 'ongoing' : '', isPartial ? 'partial' : ''].filter(Boolean).join(' ');
     const typeTag = isPartial ? ' <span class="timeline-type">partial</span>' : '';
-    const desc = s.description ? `<div class="timeline-description"><p>${escapeHtml(s.description)}</p></div>` : '';
+    const reopeningHtml = s.reopeningBill ? (() => {
+      const url = getCongressUrl(s.reopeningBill, s.end || s.start);
+      const text = escapeHtml(s.reopeningBill);
+      const link = url
+        ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`
+        : text;
+      return `<p class="timeline-reopening-bill">Reopened by: ${link}</p>`;
+    })() : '';
+    const desc = s.description ? `<div class="timeline-description"><p>${escapeHtml(s.description)}</p>${reopeningHtml}</div>` : (reopeningHtml ? `<div class="timeline-description">${reopeningHtml}</div>` : '');
 
     html += `
       <div class="${entryClasses}">
@@ -520,62 +564,123 @@ function renderNews(articles) {
     .join('');
 }
 
-// Render reopening votes
+// Render reopening votes — grouped by bill
 function renderVotes(votes) {
   if (!votes || votes.length === 0) {
     votesSection.classList.add('hidden');
     return;
   }
 
-  votesSection.classList.remove('hidden');
-  votesFeed.innerHTML = votes
-    .map((v) => {
-      const hasCount = v.yea !== null;
-      const resultLower = v.result ? v.result.toLowerCase() : '';
-      // Check failed first — "not agreed" contains "agreed" so order matters
-      const failed = resultLower.includes('failed') ||
-                     resultLower.includes('rejected') ||
-                     resultLower.includes('not agreed');
-      const passed = !failed && (resultLower.includes('passed') ||
-                     resultLower.includes('agreed'));
-      const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
+  // Group votes by bill name (strip title suffix for matching)
+  const billKey = (v) => {
+    const match = v.bill && v.bill.match(/^(H\.J\.Res\.|S\.J\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.Res\.|S\.Res\.|H\.R\.|S\.)\s*\d+/i);
+    return match ? match[0] : v.bill || 'Unknown';
+  };
+  const groups = [];
+  const groupMap = new Map();
+  for (const v of votes) {
+    const key = billKey(v);
+    if (!groupMap.has(key)) {
+      const group = { key, bill: v.bill, date: v.date, votes: [] };
+      groupMap.set(key, group);
+      groups.push(group);
+    }
+    groupMap.get(key).votes.push(v);
+  }
 
-      let progressHtml = '';
-      if (hasCount && v.threshold) {
-        const pct = Math.min(100, Math.round((v.yea / v.threshold) * 100));
-        const barColor = passed ? 'var(--green)' : failed ? 'var(--red)' : 'var(--amber)';
-        progressHtml = `
-          <div class="vote-progress">
-            <div class="vote-progress-bar-wrap">
-              <div class="vote-progress-bar" style="width: ${pct}%; background: ${barColor}"></div>
-              <div class="vote-progress-threshold" style="left: 100%"></div>
+  // Sort groups by most recent vote date descending
+  groups.sort((a, b) => {
+    const da = Math.max(...a.votes.map(v => v.date ? new Date(v.date) : 0));
+    const db = Math.max(...b.votes.map(v => v.date ? new Date(v.date) : 0));
+    return db - da;
+  });
+
+  // Determine overall bill status (passed if any vote passed)
+  function billStatus(group) {
+    let anyPassed = false;
+    let anyFailed = false;
+    for (const v of group.votes) {
+      const r = (v.result || '').toLowerCase();
+      const failed = r.includes('failed') || r.includes('rejected') || r.includes('not agreed') || r.includes('vetoed');
+      const passed = !failed && (r.includes('passed') || r.includes('agreed'));
+      if (passed) anyPassed = true;
+      if (failed) anyFailed = true;
+    }
+    if (anyPassed) return 'vote-passed';
+    if (anyFailed) return 'vote-failed';
+    return '';
+  }
+
+  votesSection.classList.remove('hidden');
+  votesFeed.innerHTML = groups
+    .map((g) => {
+      const status = billStatus(g);
+      const url = getCongressUrl(g.bill, g.date);
+      const billText = escapeHtml(g.bill || 'Funding Vote');
+      const billHtml = url
+        ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${billText}</a>`
+        : billText;
+
+      // Render each vote as a row inside the bill card
+      const rowsHtml = g.votes.map((v) => {
+        const hasCount = v.yea !== null;
+        const resultLower = v.result ? v.result.toLowerCase() : '';
+        const failed = resultLower.includes('failed') ||
+                       resultLower.includes('rejected') ||
+                       resultLower.includes('not agreed') ||
+                       resultLower.includes('vetoed');
+        const passed = !failed && (resultLower.includes('passed') ||
+                       resultLower.includes('agreed'));
+        const resultClass = passed ? 'vote-passed' : failed ? 'vote-failed' : '';
+
+        let progressHtml = '';
+        if (hasCount && v.threshold) {
+          const total = v.yea + v.nay + (v.present || 0) + (v.notVoting || 0);
+          const voting = v.yea + v.nay;
+          // For simple majority votes, use majority of votes cast as threshold
+          // so the marker aligns with the actual pass/fail boundary
+          const isCloture = (v.question || '').toLowerCase().includes('cloture');
+          const visualThreshold = isCloture ? v.threshold : Math.floor(voting / 2) + 1;
+          const yeaPct = total > 0 ? (v.yea / total) * 100 : 0;
+          const nayPct = total > 0 ? (v.nay / total) * 100 : 0;
+          const abstainPct = total > 0 ? 100 - yeaPct - nayPct : 0;
+          const thresholdPct = total > 0 ? (visualThreshold / total) * 100 : 50;
+          const thresholdDisplay = isCloture ? v.thresholdLabel : `${visualThreshold} needed`;
+          progressHtml = `
+            <div class="vote-progress">
+              <div class="vote-progress-outer" style="--threshold-pos: ${thresholdPct.toFixed(1)}%">
+                <div class="vote-progress-bar"><div class="vote-seg vote-seg--yea" style="--seg-pct: ${yeaPct.toFixed(2)}%"></div><div class="vote-seg vote-seg--nay" style="--seg-pct: ${nayPct.toFixed(2)}%"></div><div class="vote-seg vote-seg--abstain" style="--seg-pct: ${abstainPct.toFixed(2)}%"></div></div>
+              </div>
+              <div class="vote-progress-labels">
+                <span class="vote-yea">${v.yea} yea</span>
+                <span class="vote-nay">${v.nay} nay</span>
+                <span class="vote-threshold-label">${escapeHtml(thresholdDisplay)}</span>
+              </div>
             </div>
-            <div class="vote-progress-labels">
-              <span class="vote-yea">${v.yea} yea</span>
-              <span class="vote-nay">${v.nay} nay</span>
-              <span class="vote-threshold-label">${escapeHtml(v.thresholdLabel)}</span>
+          `;
+        } else if (v.thresholdLabel) {
+          progressHtml = `<div class="vote-progress-labels"><span class="vote-threshold-label">${escapeHtml(v.thresholdLabel)}</span></div>`;
+        }
+
+        const chamberTag = `<span class="vote-chamber vote-chamber-${v.chamber.toLowerCase()}">${escapeHtml(v.chamber)}</span>`;
+        const resultTag = v.result ? `<span class="vote-result ${resultClass}">${escapeHtml(v.result)}</span>` : '';
+
+        return `
+          <div class="vote-row ${resultClass}">
+            <div class="vote-row-header">
+              <div class="vote-card-tags">${chamberTag}${resultTag}</div>
+              <span class="vote-date">${escapeHtml(v.date || '')}</span>
             </div>
+            ${v.question ? `<div class="vote-row-question">${escapeHtml(v.question)}</div>` : ''}
+            ${progressHtml}
           </div>
         `;
-      }
-
-      const chamberTag = `<span class="vote-chamber vote-chamber-${v.chamber.toLowerCase()}">${escapeHtml(v.chamber)}</span>`;
-      const resultTag = v.result ? `<span class="vote-result ${resultClass}">${escapeHtml(v.result)}</span>` : '';
-      const dateStr = v.date || '';
+      }).join('');
 
       return `
-        <div class="vote-card ${resultClass}">
-          <div class="vote-card-header">
-            <div class="vote-card-tags">${chamberTag}${resultTag}</div>
-            <span class="vote-date">${escapeHtml(dateStr)}</span>
-          </div>
-          <div class="vote-card-bill">${(() => {
-            const url = getCongressUrl(v.bill, v.date);
-            const text = escapeHtml(v.bill || v.question || 'Funding Vote');
-            return url ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>` : text;
-          })()}</div>
-          ${v.question && v.question !== v.bill ? `<div class="vote-card-question">${escapeHtml(v.question)}</div>` : ''}
-          ${progressHtml}
+        <div class="vote-card ${status}">
+          <div class="vote-card-bill">${billHtml}</div>
+          <div class="vote-rows">${rowsHtml}</div>
         </div>
       `;
     })
