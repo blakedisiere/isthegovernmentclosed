@@ -636,10 +636,16 @@ function renderVotes(votes) {
         let progressHtml = '';
         if (hasCount && v.threshold) {
           const total = v.yea + v.nay + (v.present || 0) + (v.notVoting || 0);
+          const voting = v.yea + v.nay;
+          // For simple majority votes, use majority of votes cast as threshold
+          // so the marker aligns with the actual pass/fail boundary
+          const isCloture = (v.question || '').toLowerCase().includes('cloture');
+          const visualThreshold = isCloture ? v.threshold : Math.floor(voting / 2) + 1;
           const yeaPct = total > 0 ? (v.yea / total) * 100 : 0;
           const nayPct = total > 0 ? (v.nay / total) * 100 : 0;
           const abstainPct = total > 0 ? 100 - yeaPct - nayPct : 0;
-          const thresholdPct = total > 0 ? (v.threshold / total) * 100 : 50;
+          const thresholdPct = total > 0 ? (visualThreshold / total) * 100 : 50;
+          const thresholdDisplay = isCloture ? v.thresholdLabel : `${visualThreshold} needed`;
           progressHtml = `
             <div class="vote-progress">
               <div class="vote-progress-outer" style="--threshold-pos: ${thresholdPct.toFixed(1)}%">
@@ -648,7 +654,7 @@ function renderVotes(votes) {
               <div class="vote-progress-labels">
                 <span class="vote-yea">${v.yea} yea</span>
                 <span class="vote-nay">${v.nay} nay</span>
-                <span class="vote-threshold-label">${escapeHtml(v.thresholdLabel)}</span>
+                <span class="vote-threshold-label">${escapeHtml(thresholdDisplay)}</span>
               </div>
             </div>
           `;
