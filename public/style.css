@@ -1023,37 +1023,31 @@ body.partial-shutdown .counter-number {
 .vote-progress-bar-wrap {
   position: relative;
   height: 8px;
-  background: var(--bg-card);
   border-radius: 4px;
   overflow: visible;
-  display: flex;
 }
 
-.vote-progress-bar {
+.vote-progress-bars {
+  display: flex;
   height: 100%;
-  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-  min-width: 1px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .vote-bar-yea {
   background: var(--green);
-  border-radius: 4px 0 0 4px;
+  transition: flex 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .vote-bar-nay {
   background: var(--red);
-  border-radius: 0;
+  transition: flex 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .vote-bar-abstain {
   background: var(--amber);
-  border-radius: 0 4px 4px 0;
   opacity: 0.5;
-}
-
-/* Round right edge on last visible segment */
-.vote-bar-nay:last-of-type {
-  border-radius: 0 4px 4px 0;
+  transition: flex 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .vote-progress-threshold {

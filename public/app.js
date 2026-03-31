@@ -640,15 +640,17 @@ function renderVotes(votes) {
           const nayPct = total > 0 ? (v.nay / total) * 100 : 0;
           const abstainPct = total > 0 ? 100 - yeaPct - nayPct : 0;
           const thresholdPct = total > 0 ? (v.threshold / total) * 100 : 50;
-          const abstainHtml = abstainPct > 0
-            ? `<div class="vote-progress-bar vote-bar-abstain" style="width: ${abstainPct.toFixed(1)}%"></div>`
+          const abstainHtml = abstainPct > 0.5
+            ? `<div class="vote-bar-abstain" style="flex: ${abstainPct.toFixed(2)}"></div>`
             : '';
           progressHtml = `
             <div class="vote-progress">
               <div class="vote-progress-bar-wrap">
-                <div class="vote-progress-bar vote-bar-yea" style="width: ${yeaPct.toFixed(1)}%"></div>
-                <div class="vote-progress-bar vote-bar-nay" style="width: ${nayPct.toFixed(1)}%"></div>
-                ${abstainHtml}
+                <div class="vote-progress-bars">
+                  <div class="vote-bar-yea" style="flex: ${yeaPct.toFixed(2)}"></div>
+                  <div class="vote-bar-nay" style="flex: ${nayPct.toFixed(2)}"></div>
+                  ${abstainHtml}
+                </div>
                 <div class="vote-progress-threshold" style="left: ${thresholdPct.toFixed(1)}%"></div>
               </div>
               <div class="vote-progress-labels">
