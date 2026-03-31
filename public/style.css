@@ -1020,22 +1020,33 @@ body.partial-shutdown .counter-number {
   margin-top: 0.625rem;
 }
 
-.vote-progress-bar-wrap {
+.vote-progress-bar {
+  display: flex;
   position: relative;
   height: 8px;
   border-radius: 4px;
   overflow: hidden;
 }
 
-.vote-progress-bar-wrap::after {
-  content: '';
+.vote-seg {
+  flex: 0 0 var(--seg-pct, 0%);
+  min-width: 0;
+}
+
+.vote-seg--yea { background-color: var(--green); }
+.vote-seg--nay { background-color: var(--red); }
+.vote-seg--abstain { background-color: var(--amber); }
+
+.vote-threshold {
   position: absolute;
   top: 0;
+  bottom: 0;
   left: var(--threshold-pos, 50%);
-  width: 1px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.4);
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.35);
   pointer-events: none;
+  z-index: 1;
 }
 
 .vote-progress-labels {
