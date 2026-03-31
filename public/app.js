@@ -638,13 +638,17 @@ function renderVotes(votes) {
           const total = v.yea + v.nay + (v.present || 0) + (v.notVoting || 0);
           const yeaPct = total > 0 ? (v.yea / total) * 100 : 0;
           const nayPct = total > 0 ? (v.nay / total) * 100 : 0;
+          const abstainPct = total > 0 ? 100 - yeaPct - nayPct : 0;
           const thresholdPct = total > 0 ? (v.threshold / total) * 100 : 50;
-          const yeaColor = passed ? 'var(--green)' : 'var(--red)';
+          const abstainHtml = abstainPct > 0
+            ? `<div class="vote-progress-bar vote-bar-abstain" style="width: ${abstainPct.toFixed(1)}%"></div>`
+            : '';
           progressHtml = `
             <div class="vote-progress">
               <div class="vote-progress-bar-wrap">
-                <div class="vote-progress-bar vote-bar-yea" style="width: ${yeaPct.toFixed(1)}%; background: ${yeaColor}"></div>
-                <div class="vote-progress-bar vote-bar-nay" style="width: ${nayPct.toFixed(1)}%; background: var(--bg); opacity: 0.6"></div>
+                <div class="vote-progress-bar vote-bar-yea" style="width: ${yeaPct.toFixed(1)}%"></div>
+                <div class="vote-progress-bar vote-bar-nay" style="width: ${nayPct.toFixed(1)}%"></div>
+                ${abstainHtml}
                 <div class="vote-progress-threshold" style="left: ${thresholdPct.toFixed(1)}%"></div>
               </div>
               <div class="vote-progress-labels">

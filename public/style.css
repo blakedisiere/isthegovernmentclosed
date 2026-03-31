@@ -1036,10 +1036,23 @@ body.partial-shutdown .counter-number {
 }
 
 .vote-bar-yea {
+  background: var(--green);
   border-radius: 4px 0 0 4px;
 }
 
 .vote-bar-nay {
+  background: var(--red);
+  border-radius: 0;
+}
+
+.vote-bar-abstain {
+  background: var(--amber);
+  border-radius: 0 4px 4px 0;
+  opacity: 0.5;
+}
+
+/* Round right edge on last visible segment */
+.vote-bar-nay:last-of-type {
   border-radius: 0 4px 4px 0;
 }
 
