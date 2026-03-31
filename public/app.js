@@ -645,9 +645,8 @@ function renderVotes(votes) {
             : '';
           progressHtml = `
             <div class="vote-progress">
-              <div class="vote-progress-bar-wrap">
+              <div class="vote-progress-bar-wrap" style="--threshold-pos: ${thresholdPct.toFixed(1)}%">
                 <div class="vote-bar-yea" style="width: ${yeaPct.toFixed(2)}%"></div><div class="vote-bar-nay" style="width: ${nayPct.toFixed(2)}%"></div>${abstainHtml}
-                <div class="vote-progress-threshold" style="left: ${thresholdPct.toFixed(1)}%"></div>
               </div>
               <div class="vote-progress-labels">
                 <span class="vote-yea">${v.yea} yea</span>

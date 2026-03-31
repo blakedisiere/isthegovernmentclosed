@@ -1051,9 +1051,11 @@ body.partial-shutdown .counter-number {
   opacity: 0.5;
 }
 
-.vote-progress-threshold {
+.vote-progress-bar-wrap::after {
+  content: '';
   position: absolute;
   top: -3px;
+  left: var(--threshold-pos, 50%);
   width: 2px;
   height: 14px;
   background: var(--text-primary);
