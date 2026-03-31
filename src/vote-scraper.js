@@ -364,6 +364,19 @@ const KNOWN_VOTES = [
     threshold: 60,
     thresholdLabel: '60 needed (cloture)',
   },
+  {
+    chamber: 'Senate',
+    date: '2026-03-27',
+    bill: 'H.R. 7147 — Further Additional Continuing Appropriations Act, 2026',
+    question: 'On Passage (Unanimous Consent)',
+    result: 'Passed',
+    yea: null,
+    nay: null,
+    present: null,
+    notVoting: null,
+    threshold: null,
+    thresholdLabel: 'Unanimous Consent',
+  },
 ];
 
 // Keywords indicating a vote is about government funding / reopening
