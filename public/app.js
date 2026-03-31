@@ -635,13 +635,17 @@ function renderVotes(votes) {
 
         let progressHtml = '';
         if (hasCount && v.threshold) {
-          const pct = Math.min(100, Math.round((v.yea / v.threshold) * 100));
-          const barColor = passed ? 'var(--green)' : failed ? 'var(--red)' : 'var(--amber)';
+          const total = v.yea + v.nay + (v.present || 0) + (v.notVoting || 0);
+          const yeaPct = total > 0 ? (v.yea / total) * 100 : 0;
+          const nayPct = total > 0 ? (v.nay / total) * 100 : 0;
+          const thresholdPct = total > 0 ? (v.threshold / total) * 100 : 50;
+          const yeaColor = passed ? 'var(--green)' : 'var(--red)';
           progressHtml = `
             <div class="vote-progress">
               <div class="vote-progress-bar-wrap">
-                <div class="vote-progress-bar" style="width: ${pct}%; background: ${barColor}"></div>
-                <div class="vote-progress-threshold" style="left: 100%"></div>
+                <div class="vote-progress-bar vote-bar-yea" style="width: ${yeaPct.toFixed(1)}%; background: ${yeaColor}"></div>
+                <div class="vote-progress-bar vote-bar-nay" style="width: ${nayPct.toFixed(1)}%; background: var(--bg); opacity: 0.6"></div>
+                <div class="vote-progress-threshold" style="left: ${thresholdPct.toFixed(1)}%"></div>
               </div>
               <div class="vote-progress-labels">
                 <span class="vote-yea">${v.yea} yea</span>
