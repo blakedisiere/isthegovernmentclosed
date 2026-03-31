@@ -1020,10 +1020,27 @@ body.partial-shutdown .counter-number {
   margin-top: 0.625rem;
 }
 
-.vote-progress-bar {
-  display: flex;
+.vote-progress-outer {
   position: relative;
   height: 8px;
+}
+
+.vote-progress-outer::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: var(--threshold-pos, 50%);
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.vote-progress-bar {
+  display: flex;
+  height: 100%;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1036,18 +1053,6 @@ body.partial-shutdown .counter-number {
 .vote-seg--yea { background-color: var(--green); }
 .vote-seg--nay { background-color: var(--red); }
 .vote-seg--abstain { background-color: var(--amber); }
-
-.vote-threshold {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--threshold-pos, 50%);
-  width: 2px;
-  transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.35);
-  pointer-events: none;
-  z-index: 1;
-}
 
 .vote-progress-labels {
   display: flex;

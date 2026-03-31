@@ -642,11 +642,8 @@ function renderVotes(votes) {
           const thresholdPct = total > 0 ? (v.threshold / total) * 100 : 50;
           progressHtml = `
             <div class="vote-progress">
-              <div class="vote-progress-bar">
-                <div class="vote-seg vote-seg--yea" style="--seg-pct: ${yeaPct.toFixed(2)}%"></div>
-                <div class="vote-seg vote-seg--nay" style="--seg-pct: ${nayPct.toFixed(2)}%"></div>
-                <div class="vote-seg vote-seg--abstain" style="--seg-pct: ${abstainPct.toFixed(2)}%"></div>
-                <div class="vote-threshold" style="--threshold-pos: ${thresholdPct.toFixed(1)}%"></div>
+              <div class="vote-progress-outer" style="--threshold-pos: ${thresholdPct.toFixed(1)}%">
+                <div class="vote-progress-bar"><div class="vote-seg vote-seg--yea" style="--seg-pct: ${yeaPct.toFixed(2)}%"></div><div class="vote-seg vote-seg--nay" style="--seg-pct: ${nayPct.toFixed(2)}%"></div><div class="vote-seg vote-seg--abstain" style="--seg-pct: ${abstainPct.toFixed(2)}%"></div></div>
               </div>
               <div class="vote-progress-labels">
                 <span class="vote-yea">${v.yea} yea</span>
