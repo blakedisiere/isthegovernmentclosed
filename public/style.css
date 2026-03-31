@@ -1023,30 +1023,21 @@ body.partial-shutdown .counter-number {
 .vote-progress-bar-wrap {
   position: relative;
   height: 8px;
-  border-radius: 4px;
   display: flex;
   overflow: hidden;
+  border-radius: 4px;
 }
 
 .vote-bar-yea,
 .vote-bar-nay,
 .vote-bar-abstain {
   flex: none;
-  height: 100%;
+  min-height: 0;
 }
 
-.vote-bar-yea {
-  background: var(--green);
-}
-
-.vote-bar-nay {
-  background: var(--red);
-}
-
-.vote-bar-abstain {
-  background: var(--amber);
-  opacity: 0.5;
-}
+.vote-bar-yea { background: var(--green); }
+.vote-bar-nay { background: var(--red); }
+.vote-bar-abstain { background: var(--amber); opacity: 0.5; }
 
 .vote-progress-bar-wrap::after {
   content: '';
