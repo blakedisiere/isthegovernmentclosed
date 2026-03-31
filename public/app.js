@@ -637,16 +637,15 @@ function renderVotes(votes) {
         if (hasCount && v.threshold) {
           const total = v.yea + v.nay + (v.present || 0) + (v.notVoting || 0);
           const yeaPct = total > 0 ? (v.yea / total) * 100 : 0;
-          const nayPct = total > 0 ? (v.nay / total) * 100 : 0;
-          const abstainPct = total > 0 ? 100 - yeaPct - nayPct : 0;
+          const nayEnd = yeaPct + (total > 0 ? (v.nay / total) * 100 : 0);
           const thresholdPct = total > 0 ? (v.threshold / total) * 100 : 50;
-          const abstainHtml = abstainPct > 0.5
-            ? `<div class="vote-bar-abstain" style="width: ${abstainPct.toFixed(2)}%"></div>`
-            : '';
+          // Single element with linear-gradient: green | red | amber
+          const stops = nayEnd < 99.5
+            ? `var(--green) ${yeaPct.toFixed(2)}%, var(--red) ${yeaPct.toFixed(2)}%, var(--red) ${nayEnd.toFixed(2)}%, var(--amber-dim) ${nayEnd.toFixed(2)}%`
+            : `var(--green) ${yeaPct.toFixed(2)}%, var(--red) ${yeaPct.toFixed(2)}%`;
           progressHtml = `
             <div class="vote-progress">
-              <div class="vote-progress-bar-wrap" style="--threshold-pos: ${thresholdPct.toFixed(1)}%">
-                <div class="vote-bar-yea" style="width: ${yeaPct.toFixed(2)}%"></div><div class="vote-bar-nay" style="width: ${nayPct.toFixed(2)}%"></div>${abstainHtml}
+              <div class="vote-progress-bar-wrap" style="--threshold-pos: ${thresholdPct.toFixed(1)}%; background: linear-gradient(to right, ${stops})">
               </div>
               <div class="vote-progress-labels">
                 <span class="vote-yea">${v.yea} yea</span>

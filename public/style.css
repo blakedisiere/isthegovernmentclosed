@@ -1023,21 +1023,9 @@ body.partial-shutdown .counter-number {
 .vote-progress-bar-wrap {
   position: relative;
   height: 8px;
-  display: flex;
-  overflow: hidden;
   border-radius: 4px;
+  background: var(--bg-card);
 }
-
-.vote-bar-yea,
-.vote-bar-nay,
-.vote-bar-abstain {
-  flex: none;
-  min-height: 0;
-}
-
-.vote-bar-yea { background: var(--green); }
-.vote-bar-nay { background: var(--red); }
-.vote-bar-abstain { background: var(--amber); opacity: 0.5; }
 
 .vote-progress-bar-wrap::after {
   content: '';
