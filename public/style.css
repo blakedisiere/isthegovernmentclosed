@@ -1024,19 +1024,18 @@ body.partial-shutdown .counter-number {
   position: relative;
   height: 8px;
   border-radius: 4px;
-  background: var(--bg-card);
+  overflow: hidden;
 }
 
 .vote-progress-bar-wrap::after {
   content: '';
   position: absolute;
-  top: -4px;
+  top: 0;
   left: var(--threshold-pos, 50%);
   width: 1px;
-  height: calc(100% + 8px);
-  background: var(--text-tertiary);
+  height: 100%;
+  background: rgba(255, 255, 255, 0.4);
   pointer-events: none;
-  z-index: 1;
 }
 
 .vote-progress-labels {
