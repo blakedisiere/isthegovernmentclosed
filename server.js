@@ -11,6 +11,7 @@ try {
 const { getShutdownStatus } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 const { fetchNews } = require('./src/news-scraper');
+const { scrapeVotes } = require('./src/vote-scraper');
 const { addSubscription, removeSubscription, sendNotificationToAll, VAPID_PUBLIC_KEY } = require('./src/push');
 
 const app = express();
@@ -32,6 +33,10 @@ const CACHE_TTL = 15 * 60 * 1000;
 // News cache (30 minutes)
 let newsCache = { data: null, timestamp: 0 };
 const NEWS_CACHE_TTL = 30 * 60 * 1000;
+
+// Votes cache (30 minutes)
+let votesCache = { data: null, timestamp: 0 };
+const VOTES_CACHE_TTL = 30 * 60 * 1000;
 
 // OG image cache
 let ogCache = { buffer: null, cacheKey: null, timestamp: 0 };
@@ -305,6 +310,7 @@ app.get('/api/shutdowns', (req, res) => {
     type: s.type || 'full',
     days: daysBetween(s.start, s.end),
     description: s.description || null,
+    reopeningBill: s.reopeningBill || null,
   }));
   const totalDays = shutdowns.reduce((sum, s) => sum + s.days, 0);
   const maxDays = Math.max(...shutdowns.map((s) => s.days));
@@ -347,6 +353,23 @@ app.get('/api/news', async (req, res) => {
   } catch (err) {
     console.error('News fetch failed:', err.message);
     res.json({ articles: [] });
+  }
+});
+
+// API endpoint: recent reopening votes
+app.get('/api/votes', async (req, res) => {
+  const now = Date.now();
+  if (votesCache.data && now - votesCache.timestamp < VOTES_CACHE_TTL) {
+    return res.json(votesCache.data);
+  }
+  try {
+    const votes = await scrapeVotes();
+    const response = { votes, lastScraped: new Date().toISOString() };
+    votesCache = { data: response, timestamp: now };
+    res.json(response);
+  } catch (err) {
+    console.error('Votes fetch failed:', err.message);
+    res.json({ votes: [], lastScraped: null });
   }
 });
 
