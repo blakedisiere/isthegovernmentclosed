@@ -878,13 +878,6 @@ body.partial-shutdown .counter-number {
   border-color: rgba(239, 68, 68, 0.15);
 }
 
-.vote-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
 /* Vote rows inside a bill card */
 .vote-rows {
   display: flex;

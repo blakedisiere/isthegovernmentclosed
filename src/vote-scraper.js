@@ -451,10 +451,10 @@ async function scrapeHouseVotes() {
       }
     });
 
-    // Process all funding-related candidates (most recent first)
+    // Process all funding-related candidates (most recent first) in parallel
     candidates.reverse();
 
-    for (const candidate of candidates) {
+    const results = await Promise.all(candidates.map(async (candidate) => {
       try {
         const rollNum = candidate.rollNumber.replace(/\D/g, '').padStart(3, '0');
         const xmlUrl = `https://clerk.house.gov/evs/${year}/roll${rollNum}.xml`;
@@ -473,7 +473,7 @@ async function scrapeHouseVotes() {
         const voteResult = x$('vote-metadata vote-result').text().trim() ||
                            candidate.result;
 
-        votes.push({
+        return {
           chamber: 'House',
           rollNumber: candidate.rollNumber,
           date: candidate.date,
@@ -486,9 +486,9 @@ async function scrapeHouseVotes() {
           notVoting,
           threshold: 218,
           thresholdLabel: '218 needed',
-        });
+        };
       } catch {
-        votes.push({
+        return {
           chamber: 'House',
           rollNumber: candidate.rollNumber,
           date: candidate.date,
@@ -501,9 +501,10 @@ async function scrapeHouseVotes() {
           notVoting: null,
           threshold: 218,
           thresholdLabel: '218 needed',
-        });
+        };
       }
-    }
+    }));
+    votes.push(...results);
   } catch (err) {
     console.error('House vote scrape failed:', err.message);
   }
@@ -514,8 +515,9 @@ async function scrapeHouseVotes() {
 // --- Senate Roll Call Votes ---
 async function scrapeSenateVotes() {
   const now = new Date();
-  const congress = 119;
-  const session = now.getFullYear() <= 2025 ? 1 : 2;
+  const year = now.getFullYear();
+  const congress = Math.floor((year - 1) / 2) - 893;
+  const session = year % 2 === 1 ? 1 : 2;
   const menuUrl = `https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.htm`;
 
   const votes = [];
@@ -541,10 +543,10 @@ async function scrapeSenateVotes() {
       }
     });
 
-    // Process all funding-related candidates (most recent first)
+    // Process all funding-related candidates (most recent first) in parallel
     candidates.reverse();
 
-    for (const candidate of candidates) {
+    const results = await Promise.all(candidates.map(async (candidate) => {
       if (candidate.link) {
         try {
           const voteUrl = candidate.link.startsWith('http')
@@ -564,7 +566,7 @@ async function scrapeSenateVotes() {
           const threshold = isCloture ? 60 : 51;
           const thresholdLabel = isCloture ? '60 needed (cloture)' : '51 needed';
 
-          votes.push({
+          return {
             chamber: 'Senate',
             voteNumber: candidate.voteNumber,
             date: candidate.date,
@@ -577,15 +579,14 @@ async function scrapeSenateVotes() {
             notVoting: null,
             threshold,
             thresholdLabel,
-          });
-          continue;
+          };
         } catch {
-          // Fall through
+          // Fall through to default
         }
       }
 
       const isCloture = candidate.question.toLowerCase().includes('cloture');
-      votes.push({
+      return {
         chamber: 'Senate',
         voteNumber: candidate.voteNumber,
         date: candidate.date,
@@ -598,8 +599,9 @@ async function scrapeSenateVotes() {
         notVoting: null,
         threshold: isCloture ? 60 : 51,
         thresholdLabel: isCloture ? '60 needed (cloture)' : '51 needed',
-      });
-    }
+      };
+    }));
+    votes.push(...results);
   } catch (err) {
     console.error('Senate vote scrape failed:', err.message);
   }
@@ -617,13 +619,21 @@ async function scrapeVotes() {
   // Start with known curated votes
   const allVotes = [...KNOWN_VOTES];
 
-  // Merge live-scraped votes, deduplicating by chamber+date+bill
+  // Merge live-scraped votes, deduplicating by chamber+date+bill-number
+  // Use only the bill prefix+number (e.g. "H.R. 5371") to avoid mismatches
+  // from different title text between curated and scraped data
+  function billNumberKey(bill) {
+    if (!bill) return bill;
+    const match = bill.match(/^(H\.J\.Res\.|S\.J\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.Res\.|S\.Res\.|H\.R\.|S\.)\s*\d+/i);
+    return match ? match[0] : bill;
+  }
+
   const knownKeys = new Set(
-    KNOWN_VOTES.map((v) => `${v.chamber}|${v.date}|${v.bill}`)
+    KNOWN_VOTES.map((v) => `${v.chamber}|${v.date}|${billNumberKey(v.bill)}`)
   );
 
   for (const v of [...houseVotes, ...senateVotes]) {
-    const key = `${v.chamber}|${v.date}|${v.bill}`;
+    const key = `${v.chamber}|${v.date}|${billNumberKey(v.bill)}`;
     if (!knownKeys.has(key)) {
       allVotes.push(v);
       knownKeys.add(key);
