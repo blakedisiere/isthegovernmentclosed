@@ -8,7 +8,7 @@ try {
 } catch (err) {
   console.warn('sharp not available, OG image generation disabled:', err.message);
 }
-const { getShutdownStatus } = require('./src/shutdowns');
+const { getShutdownStatus, addShutdown } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 const { fetchNews } = require('./src/news-scraper');
 const { scrapeVotes } = require('./src/vote-scraper');
@@ -375,7 +375,7 @@ app.get('/api/votes', async (req, res) => {
 
 // API endpoint: get current shutdown status
 app.get('/api/status', async (req, res) => {
-  const status = getShutdownStatus();
+  let status = getShutdownStatus();
 
   // Try live scraping (with cache)
   let liveSignal = null;
@@ -392,7 +392,23 @@ app.get('/api/status', async (req, res) => {
 
   if (scrapeCache.data) {
     const closedSignals = scrapeCache.data.filter((r) => r.closed === true);
+    const openSignals = scrapeCache.data.filter((r) => r.closed === false);
     const errorSignals = scrapeCache.data.filter((r) => r.error);
+
+    // Auto-close stale ongoing shutdowns: if the data file still marks a
+    // shutdown as ongoing but live sources reach consensus that the
+    // government is open, mark it ended today and re-evaluate.
+    if (
+      status.isClosed &&
+      status.since &&
+      closedSignals.length === 0 &&
+      openSignals.length >= 2
+    ) {
+      const today = new Date().toISOString().split('T')[0];
+      addShutdown(status.since, today, status.type || 'full');
+      status = getShutdownStatus();
+    }
+
     if (closedSignals.length > 0) {
       // If any source says 'full', treat as full; otherwise 'partial'
       const hasFullSignal = closedSignals.some((s) => s.type === 'full');
