@@ -28,15 +28,17 @@ const SHUTDOWNS = [
   { start: '2018-12-22', end: '2019-01-25', reopeningBill: 'H.J.Res. 28', description: 'President Trump demanded $5.7 billion for a US-Mexico border wall. Democrats refused. At 34 days, it was the longest shutdown in US history at the time. About 800,000 federal workers went without pay. It ended with a temporary deal but no wall funding.' },
   { start: '2025-10-01', end: '2025-11-12', reopeningBill: 'H.R. 5371', description: 'Congress failed to pass appropriations bills or a continuing resolution before the fiscal year deadline amid deep partisan divisions over spending levels and policy riders. The 43-day closure surpassed the 2018-19 record as the longest in US history.', impact: { agencies: 'All federal agencies', furloughedEstimate: 800000, dailyCostEstimate: 330000000, affectedServices: ['National Parks', 'IRS Processing', 'Federal Courts', 'Passport Services', 'Food Safety Inspections', 'Small Business Loans'] } },
   { start: '2026-01-31', end: '2026-02-05', type: 'partial', detail: 'Six agencies unfunded', reopeningBill: 'H.R. 7148', description: 'Congress failed to pass appropriations for six federal departments — Education, HHS, Homeland Security, State, Transportation, and Defense — before the funding deadline. The partial shutdown ended when President Trump signed a compromise package funding most agencies through September 30, with DHS receiving a two-week extension through February 13.', impact: { agencies: 'Education, HHS, DHS, State, Transportation, Defense', furloughedEstimate: 500000, dailyCostEstimate: 200000000, affectedServices: ['Border Security', 'Student Loan Processing', 'Military Support Services', 'Diplomatic Operations'] } },
-  { start: '2026-02-14', end: null, type: 'partial', detail: 'DHS funding lapse', description: 'Funding for the Department of Homeland Security lapsed after Congress could not agree on DHS appropriations. The partial shutdown affects DHS operations while other federal agencies remain funded under previously passed spending bills.', impact: { agencies: 'Department of Homeland Security', furloughedEstimate: 45000, dailyCostEstimate: 25000000, affectedServices: ['TSA Screening', 'Border Patrol', 'FEMA Disaster Response', 'Coast Guard Operations', 'Secret Service', 'Cybersecurity (CISA)'] } },
+  { start: '2026-02-14', end: '2026-04-30', type: 'partial', detail: 'DHS funding lapse', description: 'Funding for the Department of Homeland Security lapsed after Congress could not agree on DHS appropriations. The partial shutdown affected DHS operations while other federal agencies remained funded under previously passed spending bills. DHS appropriations were enacted on April 30, restoring full funding.', impact: { agencies: 'Department of Homeland Security', furloughedEstimate: 45000, dailyCostEstimate: 25000000, affectedServices: ['TSA Screening', 'Border Patrol', 'FEMA Disaster Response', 'Coast Guard Operations', 'Secret Service', 'Cybersecurity (CISA)'] } },
 ];
 
 function getShutdownStatus() {
   const today = new Date().toISOString().split('T')[0];
 
-  // Check for ongoing shutdown (end is null or end >= today)
+  // Check for ongoing shutdown. `end` is the day funding was restored
+  // (the government is open on `end`), so the shutdown is in effect
+  // for [start, end) — i.e., strictly less than end.
   const ongoing = SHUTDOWNS.find(
-    (s) => s.end === null || (s.start <= today && s.end >= today)
+    (s) => s.start <= today && (s.end === null || s.end > today)
   );
 
   if (ongoing) {
@@ -56,8 +58,9 @@ function getShutdownStatus() {
     };
   }
 
-  // Find most recent past shutdown
-  const past = SHUTDOWNS.filter((s) => s.end && s.end < today).sort(
+  // Find most recent past shutdown (end <= today means the government
+  // has already reopened on or before today)
+  const past = SHUTDOWNS.filter((s) => s.end && s.end <= today).sort(
     (a, b) => b.end.localeCompare(a.end)
   );
 
