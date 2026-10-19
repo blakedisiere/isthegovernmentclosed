@@ -726,7 +726,7 @@ function showError() {
 }
 
 // Fetch status from API
-async function fetchStatus() {
+async function fetchStatus({ keepOnError = false } = {}) {
   try {
     const res = await fetch('/api/status');
     if (!res.ok) throw new Error(res.statusText);
@@ -735,7 +735,7 @@ async function fetchStatus() {
     renderStatus(data);
     coordinateVotesRendering();
   } catch (err) {
-    showError();
+    if (!keepOnError) showError();
   }
 }
 
@@ -901,7 +901,8 @@ impactToggle.addEventListener('keydown', (e) => {
 if (window.__STATUS__) {
   cachedStatus = window.__STATUS__;
   renderStatus(window.__STATUS__);
-  fetchTimeline();
+  // SSR data may predate the live check — refresh, but keep it if that fails
+  Promise.all([fetchStatus({ keepOnError: true }), fetchTimeline()]);
 } else {
   Promise.all([fetchStatus(), fetchTimeline()]);
 }

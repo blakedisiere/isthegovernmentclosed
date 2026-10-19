@@ -23,12 +23,6 @@ const SOURCES = [
     check: null, // handled separately
     scrape: scrapeWikipedia,
   },
-  {
-    name: 'White House Shutdown Clock',
-    url: 'https://www.whitehouse.gov/government-shutdown-clock/',
-    check: null, // handled separately — just checks HTTP status
-    scrape: checkWhiteHouseShutdownClock,
-  },
 ];
 
 // --- OPM JSON API (primary source) ---
@@ -108,7 +102,6 @@ async function checkCRSTable(html) {
     'government shutdown',
     'partial shutdown',
     'funding gap',
-    'expired',
   ];
 
   const hasShutdownLanguage = shutdownPhrases.some((phrase) =>
@@ -151,91 +144,72 @@ async function checkCRSTable(html) {
 }
 
 // --- Wikipedia shutdown article ---
-// Checks current fiscal year's shutdown article for "ongoing" indicators.
+// Wikipedia titles shutdown articles by calendar year (singular or plural).
+// Only the infobox is checked: an ongoing event's date reads "<start> – present".
+// Scanning the whole article text would match historical prose like
+// "partial shutdown" and report closures that already ended.
 async function scrapeWikipedia() {
-  const now = new Date();
-  // Fiscal year: Oct 1 - Sep 30. FY2026 starts Oct 1, 2025.
-  const fy = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
-  const urls = [
-    `https://en.wikipedia.org/w/api.php?action=parse&page=${fy}_United_States_federal_government_shutdowns&format=json`,
-    `https://en.wikipedia.org/w/api.php?action=parse&page=${fy}_United_States_federal_government_shutdown&format=json`,
-  ];
+  const year = new Date().getFullYear();
+  // Include last year so a shutdown that began in December is still found in January
+  const titles = [year, year - 1].flatMap((y) => [
+    `${y}_United_States_federal_government_shutdown`,
+    `${y}_United_States_federal_government_shutdowns`,
+  ]);
 
-  for (const url of urls) {
+  let foundArticle = false;
+
+  for (const title of titles) {
     try {
-      const response = await axios.get(url, {
+      const response = await axios.get('https://en.wikipedia.org/w/api.php', {
+        params: { action: 'parse', page: title, prop: 'text', redirects: 1, format: 'json' },
         timeout: 10000,
         headers: { 'User-Agent': 'IsTheGovernmentClosed/1.0' },
       });
 
       if (response.data?.error) continue;
+      foundArticle = true;
 
       const html = response.data?.parse?.text?.['*'] || '';
-      const $ = cheerio.load(html);
-      const text = $.text().toLowerCase();
-
-      const ongoingSignals = [
-        'ongoing',
-        'current shutdown',
-        'currently shut down',
-        'partial shutdown',
-      ];
-
-      const isOngoing = ongoingSignals.some((kw) => text.includes(kw));
-      const isPartial = text.includes('partial shutdown');
-
-      return {
-        closed: isOngoing,
-        type: isOngoing ? (isPartial ? 'partial' : 'full') : undefined,
-        source: 'Wikipedia',
-        name: 'Wikipedia Shutdown Article',
-        detail: isOngoing ? 'Wikipedia indicates an ongoing shutdown' : null,
-      };
+      const result = checkWikipediaHtml(html);
+      if (result.closed) return result;
     } catch {
       continue;
     }
   }
 
   return {
-    closed: null,
+    closed: foundArticle ? false : null,
     source: 'Wikipedia',
     name: 'Wikipedia Shutdown Article',
-    error: 'No Wikipedia article found for current fiscal year',
+    ...(foundArticle ? {} : { error: 'No Wikipedia shutdown article found for this year' }),
   };
 }
 
-// --- White House shutdown clock ---
-// The /government-shutdown-clock/ page only exists during a shutdown.
-// A 200 response is a positive signal; 404 means no clock page published.
-async function checkWhiteHouseShutdownClock() {
-  try {
-    const response = await axios.head(
-      'https://www.whitehouse.gov/government-shutdown-clock/',
-      {
-        timeout: 10000,
-        headers: { 'User-Agent': 'IsTheGovernmentClosed/1.0' },
-        validateStatus: () => true, // don't throw on 404
-      }
-    );
+function checkWikipediaHtml(html) {
+  const $ = cheerio.load(html);
+  let ongoing = null;
 
-    const exists = response.status >= 200 && response.status < 400;
+  $('.infobox').each((_, box) => {
+    // Join cells with spaces — .text() alone glues adjacent cells together
+    const text = $(box)
+      .find('th, td')
+      .map((_, cell) => $(cell).text())
+      .get()
+      .join(' ')
+      .replace(/\s+/g, ' ');
+    if (/[–—-]\s*present\b/i.test(text)) {
+      ongoing = { partial: /\bpartial\b/i.test(text) };
+      return false;
+    }
+  });
 
-    return {
-      closed: exists ? true : null, // 404 is inconclusive, not definitively "open"
-      source: 'WhiteHouse.gov',
-      name: 'White House Shutdown Clock',
-      detail: exists
-        ? 'White House shutdown clock page is live'
-        : 'No shutdown clock page found',
-    };
-  } catch (err) {
-    return {
-      closed: null,
-      source: 'WhiteHouse.gov',
-      name: 'White House Shutdown Clock',
-      error: err.message,
-    };
-  }
+  return {
+    closed: !!ongoing,
+    type: ongoing ? (ongoing.partial ? 'partial' : 'full') : undefined,
+    source: 'Wikipedia',
+    name: 'Wikipedia Shutdown Article',
+    detail: ongoing ? 'Wikipedia lists a shutdown as ongoing' : null,
+  };
 }
 
 async function scrapeAll() {
@@ -298,4 +272,4 @@ async function scrapeAll() {
   return results;
 }
 
-module.exports = { scrapeAll };
+module.exports = { scrapeAll, checkWikipediaHtml };
