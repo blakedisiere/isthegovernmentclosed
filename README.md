@@ -89,6 +89,8 @@ Returns the current shutdown status as JSON.
 | `since` | string | Start date of current shutdown (only when closed) |
 | `daysClosed` | number | Days since shutdown started (only when closed) |
 | `lastClosure` | object | Most recent past shutdown (only when open) |
+| `fundedThrough` | string | Last day of enacted funding (`FUNDED_THROUGH`), or `null` |
+| `autoDetected` | boolean | `true` when an ongoing shutdown was detected by live sources rather than the curated list |
 | `liveCheck` | object | Results from live source scraping |
 | `lastScraped` | string | Timestamp of the last scrape |
 
@@ -176,6 +178,10 @@ Add an entry to the `SHUTDOWNS` array in `src/shutdowns.js`:
 ```
 
 Use `end: null` for an ongoing shutdown. Set `type: 'partial'` for partial shutdowns.
+
+### Updating the funding deadline
+
+When a CR or appropriations package is enacted, set `FUNDED_THROUGH` in `src/shutdowns.js` to the new last day of funding. Live sources can only auto-detect a new shutdown after this date passes, which blocks false positives while the government is known to be funded. If it isn't updated after a new law, the guard simply stops applying and detection relies on live sources alone.
 
 ### Adding a new scrape source
 

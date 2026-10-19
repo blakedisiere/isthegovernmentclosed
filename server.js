@@ -8,7 +8,7 @@ try {
 } catch (err) {
   console.warn('sharp not available, OG image generation disabled:', err.message);
 }
-const { getShutdownStatus, addShutdown } = require('./src/shutdowns');
+const { getShutdownStatus, addShutdown, FUNDED_THROUGH } = require('./src/shutdowns');
 const { scrapeAll } = require('./src/scraper');
 const { fetchNews } = require('./src/news-scraper');
 const { scrapeVotes } = require('./src/vote-scraper');
@@ -204,7 +204,7 @@ app.get('/og-image.png', async (req, res) => {
     return res.status(503).send('Image generation not available');
   }
   try {
-    const status = getShutdownStatus();
+    const { status } = await getLiveStatus();
     const days = status.since ? daysBetween(status.since, null) : 0;
     const key = `${status.isClosed}-${status.type || 'none'}-${days}`;
     const now = Date.now();
@@ -229,9 +229,11 @@ app.get('/og-image.png', async (req, res) => {
 
 // SSR route — inject initial status into HTML to avoid flash of loading state
 if (indexHtml) {
-  app.get('/', (req, res) => {
+  app.get('/', async (req, res) => {
     try {
-      const status = getShutdownStatus();
+      // Use the cached live result without blocking on a cold scrape;
+      // app.js re-fetches /api/status right after load
+      const { status } = await getLiveStatus({ wait: false });
       const initialData = {
         ...status,
         daysClosed: status.since ? daysBetween(status.since, null) : null,
@@ -302,7 +304,8 @@ function daysBetween(startStr, endStr) {
 }
 
 // API endpoint: full shutdown history with computed fields
-app.get('/api/shutdowns', (req, res) => {
+app.get('/api/shutdowns', async (req, res) => {
+  await getLiveStatus(); // records any auto-detected shutdown first
   const { SHUTDOWNS } = require('./src/shutdowns');
   const shutdowns = SHUTDOWNS.map((s) => ({
     start: s.start,
@@ -373,48 +376,99 @@ app.get('/api/votes', async (req, res) => {
   }
 });
 
-// API endpoint: get current shutdown status
-app.get('/api/status', async (req, res) => {
-  let status = getShutdownStatus();
-
-  // Try live scraping (with cache)
-  let liveSignal = null;
-  const now = Date.now();
-
-  if (!scrapeCache.data || now - scrapeCache.timestamp > CACHE_TTL) {
-    try {
-      const results = await scrapeAll();
-      scrapeCache = { data: results, timestamp: now };
-    } catch (err) {
-      console.error('Scrape failed:', err.message);
-    }
+// Scrape live sources (cached for CACHE_TTL; concurrent callers share one scrape)
+let scrapeInFlight = null;
+function refreshScrape() {
+  if (scrapeCache.data && Date.now() - scrapeCache.timestamp <= CACHE_TTL) {
+    return Promise.resolve();
   }
+  if (!scrapeInFlight) {
+    scrapeInFlight = scrapeAll()
+      .then((results) => {
+        scrapeCache = { data: results, timestamp: Date.now() };
+      })
+      .catch((err) => console.error('Scrape failed:', err.message))
+      .finally(() => {
+        scrapeInFlight = null;
+      });
+  }
+  return scrapeInFlight;
+}
+
+function isoDate(d) {
+  return d.toISOString().split('T')[0];
+}
+
+// Count independent organizations, not endpoints (OPM JSON + OPM HTML = one)
+function distinctSources(signals) {
+  return new Set(signals.map((s) => s.source.replace(/\s*\(.*\)$/, ''))).size;
+}
+
+// Curated status, corrected by live scrape consensus:
+// - auto-open: a new shutdown is recorded when sources report one after the
+//   known funding deadline (FUNDED_THROUGH) has passed
+// - auto-close: an ongoing shutdown is ended when sources agree it's open
+async function getLiveStatus({ wait = true } = {}) {
+  if (wait) await refreshScrape();
+  else refreshScrape();
+
+  let status = getShutdownStatus();
+  let liveSignal = null;
 
   if (scrapeCache.data) {
     const closedSignals = scrapeCache.data.filter((r) => r.closed === true);
     const openSignals = scrapeCache.data.filter((r) => r.closed === false);
     const errorSignals = scrapeCache.data.filter((r) => r.error);
+    const today = isoDate(new Date());
+
+    // If any source says 'full', treat as full; otherwise 'partial'
+    const hasFullSignal = closedSignals.some((s) => s.type === 'full');
+    const hasPartialSignal = closedSignals.some((s) => s.type === 'partial');
+    const liveType = hasFullSignal ? 'full' : hasPartialSignal ? 'partial' : undefined;
+
+    // Auto-open: the curated list says open, but live sources report a
+    // shutdown. Past the known funding deadline one source is enough; with
+    // no deadline on record, require two independent sources. Never fires
+    // while the government is known to be funded.
+    const deadlinePassed = FUNDED_THROUGH !== null && today > FUNDED_THROUGH;
+    const requiredSources = deadlinePassed ? 1 : 2;
+    if (
+      !status.isClosed &&
+      (FUNDED_THROUGH === null || deadlinePassed) &&
+      distinctSources(closedSignals) >= requiredSources
+    ) {
+      // Funding lapses at 12:01am the day after the deadline
+      let start = today;
+      if (deadlinePassed) {
+        const next = new Date(FUNDED_THROUGH + 'T00:00:00Z');
+        next.setUTCDate(next.getUTCDate() + 1);
+        start = isoDate(next);
+      }
+      // A new lapse after an earlier closure (deadline not yet updated)
+      if (status.lastClosure && start <= status.lastClosure.end) start = today;
+      addShutdown(start, null, liveType || 'full', {
+        autoDetected: true,
+        detail: liveType === 'partial' ? 'Some agencies unfunded' : undefined,
+      });
+      status = getShutdownStatus();
+    }
 
     // Auto-close stale ongoing shutdowns: if the data file still marks a
     // shutdown as ongoing but live sources reach consensus that the
-    // government is open, mark it ended today and re-evaluate.
+    // government is open, mark it ended today and re-evaluate. Skipped for
+    // the first 2 days so sources (e.g. Wikipedia) can catch up with a new one.
     if (
       status.isClosed &&
       status.since &&
+      daysBetween(status.since, null) > 2 &&
       closedSignals.length === 0 &&
-      openSignals.length >= 2
+      distinctSources(openSignals) >= 2
     ) {
-      const today = new Date().toISOString().split('T')[0];
       addShutdown(status.since, today, status.type || 'full');
       status = getShutdownStatus();
     }
 
     if (closedSignals.length > 0) {
-      // If any source says 'full', treat as full; otherwise 'partial'
-      const hasFullSignal = closedSignals.some((s) => s.type === 'full');
-      const hasPartialSignal = closedSignals.some((s) => s.type === 'partial');
-      const liveType = hasFullSignal ? 'full' : hasPartialSignal ? 'partial' : undefined;
-
       liveSignal = {
         closed: true,
         type: liveType,
@@ -433,9 +487,17 @@ app.get('/api/status', async (req, res) => {
     }
   }
 
+  return { status, liveSignal };
+}
+
+// API endpoint: get current shutdown status
+app.get('/api/status', async (req, res) => {
+  const { status, liveSignal } = await getLiveStatus();
+
   const response = {
     ...status,
     daysClosed: status.since ? daysBetween(status.since, null) : null,
+    fundedThrough: FUNDED_THROUGH,
     liveCheck: liveSignal,
     sourceCount: scrapeCache.data ? scrapeCache.data.length : 0,
     lastScraped: scrapeCache.timestamp

@@ -31,6 +31,14 @@ const SHUTDOWNS = [
   { start: '2026-02-14', end: '2026-04-30', type: 'partial', detail: 'DHS funding lapse', description: 'Funding for the Department of Homeland Security lapsed after Congress could not agree on DHS appropriations. The partial shutdown affected DHS operations while other federal agencies remained funded under previously passed spending bills. DHS appropriations were enacted on April 30, restoring full funding.', impact: { agencies: 'Department of Homeland Security', furloughedEstimate: 45000, dailyCostEstimate: 25000000, affectedServices: ['TSA Screening', 'Border Patrol', 'FEMA Disaster Response', 'Coast Guard Operations', 'Secret Service', 'Cybersecurity (CISA)'] } },
 ];
 
+// Last day the government is funded under current law. Update this whenever
+// a new CR or full-year appropriations package is enacted (set to null if
+// unknown). Live scrapers can only auto-detect a NEW shutdown after this date
+// has passed, which prevents a single bad scrape from flipping the site to
+// "Yes" while the government is known to be funded.
+// Current: FY2027 CR, H.R. 6500 (P.L. 119-103), signed 2026-09-02.
+const FUNDED_THROUGH = '2026-12-11';
+
 function getShutdownStatus() {
   const today = new Date().toISOString().split('T')[0];
 
@@ -55,6 +63,7 @@ function getShutdownStatus() {
       detail,
       message: `The government has been ${closedWord} since ${formatDate(ongoing.start)}.${detailSuffix}`,
       impact: ongoing.impact || null,
+      autoDetected: !!ongoing.autoDetected,
     };
   }
 
@@ -89,14 +98,14 @@ function formatDate(dateStr) {
 }
 
 // Add a shutdown dynamically (e.g., from scraping)
-function addShutdown(start, end = null, type = 'full') {
+function addShutdown(start, end = null, type = 'full', extra = {}) {
   const exists = SHUTDOWNS.find((s) => s.start === start);
   if (!exists) {
-    SHUTDOWNS.push({ start, end, type });
+    SHUTDOWNS.push({ start, end, type, ...extra });
     SHUTDOWNS.sort((a, b) => a.start.localeCompare(b.start));
   } else if (end && !exists.end) {
     exists.end = end;
   }
 }
 
-module.exports = { getShutdownStatus, addShutdown, SHUTDOWNS };
+module.exports = { getShutdownStatus, addShutdown, SHUTDOWNS, FUNDED_THROUGH };
